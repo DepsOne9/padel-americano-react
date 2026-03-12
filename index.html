@@ -7,21 +7,22 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <title>Padel Americano</title>
-<link rel="icon" type="image/png" sizes="192x192" href="./icon-192.png">
-<link rel="apple-touch-icon" sizes="192x192" href="./icon-192.png">
+<link rel="icon" type="image/png" sizes="192x192" href="/padel-americano-react/icon-192.png">
+<link rel="apple-touch-icon" sizes="192x192" href="/padel-americano-react/icon-192.png">
 <link rel="manifest" id="pwa-manifest">
 <script id="pwa-init">
 (function(){
-  // ── PWA MANIFEST (injected dynamically so we can use base64 icons) ──
+  const base = '/padel-americano-react';
+  // ── PWA MANIFEST ──
   const icons = [
-    { src:"./icon-192.png", sizes:"192x192", type:"image/png", purpose:"any maskable" },
-    { src:"./icon-512.png", sizes:"512x512", type:"image/png", purpose:"any maskable" }
+    { src: base + '/icon-192.png', sizes:'192x192', type:'image/png', purpose:'any maskable' },
+    { src: base + '/icon-512.png', sizes:'512x512', type:'image/png', purpose:'any maskable' }
   ];
   const manifest = {
     name: "Padel Americano",
     short_name: "Padel",
     description: "Americano tournament tracker for padel",
-    start_url: "./",
+    start_url: base + '/',
     display: "standalone",
     background_color: "#080f1e",
     theme_color: "#080f1e",
@@ -33,10 +34,9 @@
   document.getElementById('pwa-manifest').href = url;
 
   // ── SERVICE WORKER ──
-  // Requires sw.js deployed alongside index.html (both files in GitHub Pages repo root).
   if('serviceWorker' in navigator){
     window.addEventListener('load', () => {
-      navigator.serviceWorker.register('./sw.js')
+      navigator.serviceWorker.register(base + '/sw.js')
         .then(r => console.log('SW registered:', r.scope))
         .catch(e => console.warn('SW unavailable (expected in dev/preview):', e.message));
     });
