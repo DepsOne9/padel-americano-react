@@ -28,13 +28,13 @@
 :root{--bg:#080f1e;--surface:#0f1d35;--card:#162440;--accent:#00e5a0;--accent2:#ff5c5c;--accent3:#ffd166;--text:#f0f4ff;--muted:#6b7fa3;--border:#1e3154;--r:14px;}
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
 html,body{height:100%;}
-body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min-height:100vh;overflow-x:hidden;max-width:480px;margin:0 auto;}
-input,select,button{font-family:'DM Sans',sans-serif;}
+body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;min-height:100vh;overflow-x:hidden;max-width:480px;margin:0 auto;-webkit-font-smoothing:antialiased;}
+input,select,button{font-family:'Inter',sans-serif;}
 input[type=number]::-webkit-inner-spin-button,input[type=number]::-webkit-outer-spin-button{-webkit-appearance:none;}
 input[type=number]{-moz-appearance:textfield;}
 .screen{display:none;min-height:100vh;}.screen.active{display:block;}.screen#s-profile{overflow-y:auto;height:100vh;}
 .hdr{background:linear-gradient(180deg,var(--surface) 0%,transparent 100%);padding:52px 20px 22px;text-align:center;position:relative;}
-.logo{font-family:'Bebas Neue',cursive;font-size:52px;letter-spacing:5px;background:linear-gradient(135deg,var(--accent),#00b4d8);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;line-height:1;}
+.logo{font-weight:800;letter-spacing:-0.5px;font-size:52px;letter-spacing:5px;background:linear-gradient(135deg,var(--accent),#00b4d8);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;line-height:1;}
 .logo-sub{font-size:11px;letter-spacing:5px;text-transform:uppercase;color:var(--muted);margin-top:3px;}
 .back-btn{position:absolute;left:16px;top:52px;background:var(--card);border:1px solid var(--border);color:var(--text);padding:8px 16px;border-radius:50px;font-size:13px;cursor:pointer;}
 .btn{display:block;width:100%;padding:15px 20px;border-radius:var(--r);border:none;font-size:16px;font-weight:700;letter-spacing:0.5px;cursor:pointer;transition:transform 0.1s,opacity 0.1s;}
@@ -56,7 +56,7 @@ input[type=number]{-moz-appearance:textfield;}
 .prog-wrap{height:4px;background:var(--border);border-radius:2px;overflow:hidden;margin:6px 0;}
 .prog-fill{height:100%;background:var(--accent);border-radius:2px;transition:width 0.4s;}
 .share-bar{display:flex;align-items:center;justify-content:space-between;background:rgba(0,229,160,0.06);border:1px solid rgba(0,229,160,0.15);border-radius:10px;padding:8px 12px;margin:8px 0 10px;}
-.share-code{font-family:'Bebas Neue',cursive;font-size:28px;letter-spacing:7px;color:var(--accent);}
+.share-code{font-weight:800;letter-spacing:-0.5px;font-size:28px;letter-spacing:7px;color:var(--accent);}
 .copy-btn{background:var(--card);border:1px solid var(--border);color:var(--text);padding:7px 14px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;}
 .copy-btn.done{background:var(--accent);color:var(--bg);border-color:var(--accent);}
 .tab-bar{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:480px;background:var(--surface);border-top:1px solid var(--border);display:flex;z-index:100;padding-bottom:env(safe-area-inset-bottom);}
@@ -70,8 +70,8 @@ input[type=number]{-moz-appearance:textfield;}
 .gnav-icon{font-size:22px;line-height:1;}
 /* ── TOP BAR ── */
 .top-bar{display:flex;align-items:center;justify-content:space-between;padding:52px 16px 14px;background:linear-gradient(180deg,var(--surface) 0%,transparent 100%);position:relative;}
-.top-bar-logo{font-family:'Bebas Neue',cursive;font-size:24px;letter-spacing:4px;background:linear-gradient(135deg,var(--accent),#00b4d8);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
-.avatar-btn{width:38px;height:38px;border-radius:50%;background:rgba(0,229,160,0.12);border:2px solid var(--accent);display:flex;align-items:center;justify-content:center;font-family:'Bebas Neue',cursive;font-size:17px;color:var(--accent);cursor:pointer;overflow:hidden;flex-shrink:0;-webkit-tap-highlight-color:transparent;}
+.top-bar-logo{font-weight:800;letter-spacing:-0.5px;font-size:24px;letter-spacing:4px;background:linear-gradient(135deg,var(--accent),#00b4d8);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+.avatar-btn{width:38px;height:38px;border-radius:50%;background:rgba(0,229,160,0.12);border:2px solid var(--accent);display:flex;align-items:center;justify-content:center;font-weight:800;letter-spacing:-0.5px;font-size:17px;color:var(--accent);cursor:pointer;overflow:hidden;flex-shrink:0;-webkit-tap-highlight-color:transparent;}
 .avatar-btn:active{opacity:0.8;}
 /* ── DROPDOWN MENU ── */
 .drop-overlay{display:none;position:fixed;inset:0;z-index:299;}
@@ -79,7 +79,7 @@ input[type=number]{-moz-appearance:textfield;}
 .drop-menu{position:fixed;top:0;right:0;width:260px;background:var(--card);border-left:1px solid var(--border);border-bottom:1px solid var(--border);border-radius:0 0 0 16px;z-index:300;overflow:hidden;transform:translateX(100%);transition:transform 0.25s cubic-bezier(.4,0,.2,1);}
 .drop-menu.open{transform:translateX(0);}
 .drop-user{display:flex;align-items:center;gap:10px;padding:52px 14px 14px;background:var(--surface);border-bottom:1px solid var(--border);}
-.drop-user-av{width:40px;height:40px;border-radius:50%;background:rgba(0,229,160,0.12);border:2px solid var(--accent);display:flex;align-items:center;justify-content:center;font-family:'Bebas Neue',cursive;font-size:18px;color:var(--accent);flex-shrink:0;overflow:hidden;}
+.drop-user-av{width:40px;height:40px;border-radius:50%;background:rgba(0,229,160,0.12);border:2px solid var(--accent);display:flex;align-items:center;justify-content:center;font-weight:800;letter-spacing:-0.5px;font-size:18px;color:var(--accent);flex-shrink:0;overflow:hidden;}
 .drop-user-name{font-weight:700;font-size:14px;line-height:1.3;}
 .drop-user-email{font-size:11px;color:var(--muted);margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:160px;}
 .drop-item{display:flex;align-items:center;gap:12px;padding:13px 16px;cursor:pointer;font-size:14px;font-weight:500;border-bottom:1px solid var(--border);transition:background 0.15s;-webkit-tap-highlight-color:transparent;}
@@ -96,11 +96,11 @@ input[type=number]{-moz-appearance:textfield;}
 .score-hint{font-size:11px;text-align:center;margin-bottom:8px;color:var(--muted);}
 .score-hint.over{color:var(--accent2);font-weight:700;}
 .score-row{display:flex;align-items:center;gap:6px;margin-bottom:8px;}
-.score-inp{flex:1;text-align:center;background:var(--surface);border:2px solid var(--border);border-radius:10px;color:var(--text);font-family:'Bebas Neue',cursive;font-size:34px;padding:5px 2px;outline:none;width:100%;}
+.score-inp{flex:1;text-align:center;background:var(--surface);border:2px solid var(--border);border-radius:10px;color:var(--text);font-weight:800;letter-spacing:-0.5px;font-size:34px;padding:5px 2px;outline:none;width:100%;}
 .score-inp:focus{border-color:var(--accent);}
 .score-inp.over{border-color:var(--accent2);background:rgba(255,92,92,0.07);}
 .score-dash{font-size:22px;font-weight:600;color:var(--muted);flex-shrink:0;}
-.saved-score{font-family:'Bebas Neue',cursive;font-size:32px;letter-spacing:2px;text-align:center;}
+.saved-score{font-weight:800;letter-spacing:-0.5px;font-size:32px;letter-spacing:2px;text-align:center;}
 .edit-btn{background:transparent;border:1px solid var(--border);color:var(--muted);padding:5px 12px;border-radius:8px;font-size:12px;cursor:pointer;margin-top:4px;}
 .round-badge{font-weight:700;font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--accent);background:rgba(0,229,160,0.1);padding:4px 12px;border-radius:50px;}
 .bye-notice{background:rgba(255,209,102,0.1);border:1px solid rgba(255,209,102,0.3);border-radius:10px;padding:10px 14px;font-size:13px;color:var(--accent3);margin-bottom:14px;}
@@ -138,15 +138,15 @@ input[type=number]{-moz-appearance:textfield;}
 .podium-wrap{display:flex;align-items:flex-end;justify-content:center;gap:6px;padding:20px 16px 0;background:linear-gradient(180deg,rgba(0,229,160,0.04) 0%,transparent 100%);}
 .pod{flex:1;text-align:center;display:flex;flex-direction:column;align-items:center;cursor:pointer;}
 .pod:active{opacity:0.8;}
-.pod-avatar{border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:'Bebas Neue',cursive;margin-bottom:6px;border:2px solid transparent;transition:transform 0.15s;}
+.pod-avatar{border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:800;letter-spacing:-0.5px;margin-bottom:6px;border:2px solid transparent;transition:transform 0.15s;}
 .pod:active .pod-avatar{transform:scale(0.93);}
 .pod.p1 .pod-avatar{width:54px;height:54px;font-size:26px;background:rgba(255,209,102,0.15);border-color:var(--accent3);color:var(--accent3);}
 .pod.p2 .pod-avatar{width:44px;height:44px;font-size:22px;background:rgba(170,170,170,0.12);border-color:#aaa;color:#aaa;}
 .pod.p3 .pod-avatar{width:44px;height:44px;font-size:22px;background:rgba(205,127,50,0.12);border-color:#cd7f32;color:#cd7f32;}
 .pod-name{font-size:12px;font-weight:700;margin-bottom:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:90px;}
 .pod.p1 .pod-name{font-size:13px;}
-.pod-pts{font-family:'Bebas Neue',cursive;font-size:28px;line-height:1;}
-.pod.p1 .pod-pts{font-size:38px;color:var(--accent);}
+.pod-pts{font-weight:800;letter-spacing:-0.5px;font-size:28px;line-height:1;}
+.pod.p1 .pod-pts{font-size:34px;color:var(--accent);}
 .pod-lbl{font-size:9px;font-weight:600;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-top:1px;}
 .pod-block{width:100%;border-radius:8px 8px 0 0;margin-top:10px;}
 .pod.p1 .pod-block{height:60px;background:linear-gradient(180deg,rgba(0,229,160,0.18),rgba(0,229,160,0.05));border-top:2px solid var(--accent);}
@@ -159,8 +159,8 @@ input[type=number]{-moz-appearance:textfield;}
 .bar-name{font-size:12px;font-weight:600;color:var(--text);min-width:68px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
 .bar-track{flex:1;height:22px;background:var(--surface);border-radius:5px;overflow:hidden;}
 .bar-fill{height:100%;border-radius:5px;display:flex;align-items:center;padding:0 8px;}
-.bar-fill span{font-family:'Bebas Neue',cursive;font-size:14px;color:var(--bg);}
-.bar-total{font-family:'Bebas Neue',cursive;font-size:18px;color:var(--text);min-width:36px;text-align:right;}
+.bar-fill span{font-weight:800;letter-spacing:-0.5px;font-size:14px;color:var(--bg);}
+.bar-total{font-weight:800;letter-spacing:-0.5px;font-size:18px;color:var(--text);min-width:36px;text-align:right;}
 .win-strip{display:flex;align-items:center;gap:10px;padding:9px 12px;background:var(--surface);border-radius:10px;margin-bottom:7px;cursor:pointer;}
 .win-strip:active{opacity:0.75;}
 .ws-name{font-size:13px;font-weight:600;flex:1;}
@@ -170,26 +170,26 @@ input[type=number]{-moz-appearance:textfield;}
 .ws-ratio{font-size:12px;font-weight:700;color:var(--muted);min-width:40px;text-align:right;}
 .lb-footer{padding:14px 16px;display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;}
 .lb-footer-cell{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:10px 8px;text-align:center;}
-.lb-footer-cell .fv{font-family:'Bebas Neue',cursive;font-size:26px;color:var(--accent);display:block;line-height:1;}
+.lb-footer-cell .fv{font-weight:800;letter-spacing:-0.5px;font-size:26px;color:var(--accent);display:block;line-height:1;}
 .lb-footer-cell .fl{font-size:9px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);display:block;margin-top:3px;}
 
 /* ── PROFILE ── */
-.profile-avatar-big{width:72px;height:72px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:'Bebas Neue',cursive;font-size:36px;margin:0 auto 10px;border:3px solid var(--accent);background:rgba(0,229,160,0.1);color:var(--accent);}
-.profile-name-big{font-family:'Bebas Neue',cursive;font-size:34px;letter-spacing:2px;text-align:center;}
+.profile-avatar-big{width:72px;height:72px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:800;letter-spacing:-0.5px;font-size:36px;margin:0 auto 10px;border:3px solid var(--accent);background:rgba(0,229,160,0.1);color:var(--accent);}
+.profile-name-big{font-weight:800;letter-spacing:-0.5px;font-size:34px;letter-spacing:2px;text-align:center;}
 .profile-joined{font-size:12px;color:var(--muted);text-align:center;margin-top:3px;}
 .psg-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;padding:0 16px;margin-bottom:12px;}
 .psg-cell{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:12px 8px;text-align:center;}
-.psg-cell .pv{font-family:'Bebas Neue',cursive;font-size:30px;color:var(--accent);display:block;line-height:1;}
+.psg-cell .pv{font-weight:800;letter-spacing:-0.5px;font-size:30px;color:var(--accent);display:block;line-height:1;}
 .psg-cell .pl{font-size:9px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);display:block;margin-top:3px;}
 .psg-cell.warn .pv{color:var(--accent2);}
 .psg-cell.gold .pv{color:var(--accent3);}
-.round-dot{flex:1;height:28px;border-radius:5px;display:flex;align-items:center;justify-content:center;font-family:'Bebas Neue',cursive;font-size:14px;position:relative;}
-.round-dot .rn{font-size:8px;font-family:'DM Sans',sans-serif;font-weight:700;position:absolute;top:2px;left:4px;opacity:0.6;}
+.round-dot{flex:1;height:28px;border-radius:5px;display:flex;align-items:center;justify-content:center;font-weight:800;letter-spacing:-0.5px;font-size:14px;position:relative;}
+.round-dot .rn{font-size:8px;font-family:'Inter',sans-serif;font-weight:700;position:absolute;top:2px;left:4px;opacity:0.6;}
 
 /* ── ACCOUNT chip ── */
 .acct-chip{display:flex;align-items:center;gap:8px;background:var(--card);border:1px solid var(--border);border-radius:12px;padding:10px 14px;margin-bottom:12px;cursor:pointer;}
 .acct-chip:active{opacity:0.8;}
-.acct-avatar-sm{width:34px;height:34px;border-radius:50%;background:rgba(0,229,160,0.1);border:2px solid var(--accent);display:flex;align-items:center;justify-content:center;font-family:'Bebas Neue',cursive;font-size:16px;color:var(--accent);flex-shrink:0;}
+.acct-avatar-sm{width:34px;height:34px;border-radius:50%;background:rgba(0,229,160,0.1);border:2px solid var(--accent);display:flex;align-items:center;justify-content:center;font-weight:800;letter-spacing:-0.5px;font-size:16px;color:var(--accent);flex-shrink:0;}
 
 /* ── TOURNAMENT LIST ── */
 .tlist-card{display:flex;align-items:center;gap:12px;background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:13px 14px;margin-bottom:9px;cursor:pointer;transition:opacity 0.15s;}
@@ -211,7 +211,7 @@ input[type=number]{-moz-appearance:textfield;}
 .modal-overlay.show{opacity:1;pointer-events:all;}
 .modal-box{background:var(--surface);border:1px solid var(--border);border-radius:18px 18px 0 0;width:100%;max-width:480px;padding:24px 20px 36px;transform:translateY(20px);transition:transform 0.25s;}
 .modal-overlay.show .modal-box{transform:translateY(0);}
-.modal-title{font-family:'Bebas Neue',cursive;font-size:26px;letter-spacing:2px;margin-bottom:6px;}
+.modal-title{font-weight:800;letter-spacing:-0.5px;font-size:26px;letter-spacing:2px;margin-bottom:6px;}
 .modal-sub{font-size:13px;color:var(--muted);margin-bottom:18px;line-height:1.5;}
 </style>
   <script type="module" crossorigin src="/padel-americano-react/assets/index-DjBw7e2V.js"></script>
@@ -237,7 +237,7 @@ input[type=number]{-moz-appearance:textfield;}
 <div class="screen active" id="s-home">
   <div class="top-bar" style="position:relative;">
     <div style="position:absolute;left:50%;transform:translateX(-50%);text-align:center;pointer-events:none;">
-      <div class="top-bar-logo">PADEL</div>
+      <div class="top-bar-logo">padel<span style="color:var(--accent);">.</span></div>
       <div style="font-size:10px;letter-spacing:3px;text-transform:uppercase;color:var(--muted);">Americano</div>
     </div>
     <div style="visibility:hidden;"><div class="avatar-btn"></div></div>
@@ -256,7 +256,7 @@ input[type=number]{-moz-appearance:textfield;}
     </div>
     <div id="home-stats-bar"></div>
     <div class="row" style="margin-bottom:12px;">
-      <button class="btn btn-primary" style="flex:1;" onclick="goSetup()">+ New</button>
+      <button class="btn btn-primary" style="flex:1;" onclick="goSetup()">+ New tournament</button>
       <button class="btn btn-secondary" style="flex:1;" onclick="goJoin()">Join</button>
     </div>
     <div id="home-tourn-list"></div>
@@ -267,7 +267,7 @@ input[type=number]{-moz-appearance:textfield;}
 <div class="screen" id="s-account">
   <div class="top-bar" style="padding-bottom:10px;position:relative;">
     <div style="position:absolute;left:50%;transform:translateX(-50%);pointer-events:none;">
-      <div class="top-bar-logo">PROFILE</div>
+      <div class="top-bar-logo">profile<span style="color:var(--accent);">.</span></div>
     </div>
     <div style="visibility:hidden;"><div class="avatar-btn"></div></div>
     <div id="top-avatar-btn-acct" onclick="toggleDropdown()"></div>
@@ -279,7 +279,7 @@ input[type=number]{-moz-appearance:textfield;}
 <div class="screen" id="s-join">
   <div class="top-bar" style="padding-bottom:10px;position:relative;">
     <div style="position:absolute;left:50%;transform:translateX(-50%);text-align:center;pointer-events:none;">
-      <div class="top-bar-logo">JOIN</div>
+      <div class="top-bar-logo">join<span style="color:var(--accent);">.</span></div>
       <div style="font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);">Enter tournament code</div>
     </div>
     <div style="visibility:hidden;"><div class="avatar-btn"></div></div>
@@ -302,7 +302,7 @@ input[type=number]{-moz-appearance:textfield;}
 <div class="screen" id="s-setup">
   <div class="top-bar" style="padding-bottom:10px;position:relative;">
     <div style="position:absolute;left:50%;transform:translateX(-50%);text-align:center;pointer-events:none;">
-      <div class="top-bar-logo">NEW TOURNAMENT</div>
+      <div class="top-bar-logo">new<span style="color:var(--accent);">.</span></div>
       <div style="font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);">Configure your session</div>
     </div>
     <div style="visibility:hidden;"><div class="avatar-btn"></div></div>
@@ -362,7 +362,7 @@ input[type=number]{-moz-appearance:textfield;}
 <div class="screen" id="s-mygames">
   <div class="top-bar" style="padding-bottom:10px;position:relative;">
     <div style="position:absolute;left:50%;transform:translateX(-50%);text-align:center;pointer-events:none;">
-      <div class="top-bar-logo">ALL GAMES</div>
+      <div class="top-bar-logo">all games<span style="color:var(--accent);">.</span></div>
       <div style="font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);">Completed tournaments</div>
     </div>
     <div style="visibility:hidden;"><div class="avatar-btn"></div></div>
@@ -375,7 +375,7 @@ input[type=number]{-moz-appearance:textfield;}
 <div class="screen" id="s-leaderboard">
   <div class="top-bar" style="padding-bottom:10px;position:relative;">
     <div style="position:absolute;left:50%;transform:translateX(-50%);text-align:center;pointer-events:none;">
-      <div class="top-bar-logo">RANKING</div>
+      <div class="top-bar-logo">rank<span style="color:var(--accent);">.</span></div>
       <div style="font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);">Global Leaderboard</div>
     </div>
     <div style="visibility:hidden;"><div class="avatar-btn"></div></div>
@@ -783,15 +783,15 @@ function renderHomeStats(){
   el.innerHTML=`
     <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:14px;">
       <div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:12px 8px;text-align:center;">
-        <div style="font-family:'Bebas Neue',cursive;font-size:28px;color:var(--accent);line-height:1;">${winRate}%</div>
+        <div style="font-weight:800;letter-spacing:-0.5px;font-size:28px;color:var(--accent);line-height:1;">${winRate}%</div>
         <div style="font-size:9px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-top:3px;">Win Rate</div>
       </div>
       <div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:12px 8px;text-align:center;">
-        <div style="font-family:'Bebas Neue',cursive;font-size:28px;color:var(--text);line-height:1;">${played}</div>
+        <div style="font-weight:800;letter-spacing:-0.5px;font-size:28px;color:var(--text);line-height:1;">${played}</div>
         <div style="font-size:9px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-top:3px;">Matches</div>
       </div>
       <div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:12px 8px;text-align:center;">
-        <div style="font-family:'Bebas Neue',cursive;font-size:28px;color:var(--accent3);line-height:1;">${yearPts}</div>
+        <div style="font-weight:800;letter-spacing:-0.5px;font-size:28px;color:var(--accent3);line-height:1;">${yearPts}</div>
         <div style="font-size:9px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-top:3px;">Total Pts</div>
       </div>
     </div>`;
@@ -1031,7 +1031,7 @@ function renderAcctMe(){
   el.innerHTML=`
     <div style="text-align:center;padding:20px 16px 16px;">
       <div style="position:relative;width:82px;margin:0 auto 12px;">
-        <div id="avatar-display" style="width:82px;height:82px;border-radius:50%;background:rgba(0,229,160,0.1);border:3px solid var(--accent);display:flex;align-items:center;justify-content:center;font-family:'Bebas Neue',cursive;font-size:38px;color:var(--accent);overflow:hidden;">${avatarContent}</div>
+        <div id="avatar-display" style="width:82px;height:82px;border-radius:50%;background:rgba(0,229,160,0.1);border:3px solid var(--accent);display:flex;align-items:center;justify-content:center;font-weight:800;letter-spacing:-0.5px;font-size:38px;color:var(--accent);overflow:hidden;">${avatarContent}</div>
         <label for="avatar-upload" style="position:absolute;bottom:0;right:0;width:26px;height:26px;background:var(--accent);border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:13px;border:2px solid var(--bg);" title="Change photo">📷</label>
         <input type="file" id="avatar-upload" accept="image/*" style="display:none;" onchange="handleAvatarUpload(event)"/>
       </div>
@@ -1040,7 +1040,7 @@ function renderAcctMe(){
         <span style="font-size:11px;color:var(--muted);">Signed in with Google</span>
       </div>
       <div id="username-display">
-        <div style="font-family:'Bebas Neue',cursive;font-size:32px;letter-spacing:2px;">${u.username}</div>
+        <div style="font-weight:800;letter-spacing:-0.5px;font-size:32px;letter-spacing:2px;">${u.username}</div>
         <div style="font-size:12px;color:var(--muted);margin-top:2px;">Member since ${fmtDate(u.joinedAt)}</div>
         ${canChange
           ?`<button onclick="showUsernameEdit()" style="margin-top:8px;background:transparent;border:1px solid var(--border);color:var(--muted);padding:5px 14px;border-radius:50px;font-size:12px;font-weight:600;cursor:pointer;">✏️ Change username</button>`
@@ -1120,7 +1120,7 @@ async function loadAcctProfileStats(){
               <div style="font-size:11px;color:var(--muted);margin-top:2px;">${fmtDate(th.date)} · ${th.ppg||24}pts/game</div>
             </div>
             <div style="text-align:right;flex-shrink:0;">
-              <div style="font-family:'Bebas Neue',cursive;font-size:26px;color:var(--accent);line-height:1;">${th.points}</div>
+              <div style="font-weight:800;letter-spacing:-0.5px;font-size:26px;color:var(--accent);line-height:1;">${th.points}</div>
               <div style="font-size:10px;color:var(--muted);">pts</div>
             </div>
             <div style="font-size:18px;flex-shrink:0;color:var(--muted);transition:transform 0.2s;" id="hist-chevron-${idx}">›</div>
@@ -1130,19 +1130,19 @@ async function loadAcctProfileStats(){
           </div>
           <div style="display:flex;gap:10px;margin-top:10px;">
             <div style="flex:1;background:var(--surface);border-radius:8px;padding:7px 6px;text-align:center;">
-              <div style="font-family:'Bebas Neue',cursive;font-size:18px;color:${rankColor};">${rankMedal||rankStr}</div>
+              <div style="font-weight:800;letter-spacing:-0.5px;font-size:18px;color:${rankColor};">${rankMedal||rankStr}</div>
               <div style="font-size:9px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:var(--muted);">Rank</div>
             </div>
             <div style="flex:1;background:var(--surface);border-radius:8px;padding:7px 6px;text-align:center;">
-              <div style="font-family:'Bebas Neue',cursive;font-size:18px;color:var(--accent);">${th.wins}W</div>
+              <div style="font-weight:800;letter-spacing:-0.5px;font-size:18px;color:var(--accent);">${th.wins}W</div>
               <div style="font-size:9px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:var(--muted);">Wins</div>
             </div>
             <div style="flex:1;background:var(--surface);border-radius:8px;padding:7px 6px;text-align:center;">
-              <div style="font-family:'Bebas Neue',cursive;font-size:18px;color:var(--accent2);">${th.losses}L</div>
+              <div style="font-weight:800;letter-spacing:-0.5px;font-size:18px;color:var(--accent2);">${th.losses}L</div>
               <div style="font-size:9px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:var(--muted);">Losses</div>
             </div>
             <div style="flex:1;background:var(--surface);border-radius:8px;padding:7px 6px;text-align:center;">
-              <div style="font-family:'Bebas Neue',cursive;font-size:18px;">${th.played}</div>
+              <div style="font-weight:800;letter-spacing:-0.5px;font-size:18px;">${th.played}</div>
               <div style="font-size:9px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:var(--muted);">Matches</div>
             </div>
           </div>
@@ -1282,16 +1282,16 @@ async function renderGlobalRanking(){
     const pct=Math.round(p.pts/maxPts*100);
     const isMe=currentUser&&currentUser.uid===p.uid;
     const medal=medals[i]||(i+1);
-    const avatarInner=p.avatar?`<img src="${p.avatar}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;"/>`:`<span style="font-family:'Bebas Neue',cursive;font-size:15px;color:var(--accent);">${p.username[0].toUpperCase()}</span>`;
+    const avatarInner=p.avatar?`<img src="${p.avatar}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;"/>`:`<span style="font-weight:800;letter-spacing:-0.5px;font-size:15px;color:var(--accent);">${p.username[0].toUpperCase()}</span>`;
     html+=`<div onclick="openProfileByUid('${p.uid}','account')" style="display:flex;align-items:center;gap:10px;padding:11px 12px;background:${isMe?'rgba(0,229,160,0.07)':i<3?'var(--card)':'var(--surface)'};border:1px solid ${isMe?'rgba(0,229,160,0.3)':i<3?'var(--border)':'transparent'};border-radius:12px;margin-bottom:8px;cursor:pointer;">
-      <div style="font-family:'Bebas Neue',cursive;font-size:${i<3?'22':'18'}px;min-width:26px;text-align:center;color:${i===0?'var(--accent3)':i===1?'#aaa':i===2?'#cd7f32':'var(--muted)'};">${medal}</div>
+      <div style="font-weight:800;letter-spacing:-0.5px;font-size:${i<3?'22':'18'}px;min-width:26px;text-align:center;color:${i===0?'var(--accent3)':i===1?'#aaa':i===2?'#cd7f32':'var(--muted)'};">${medal}</div>
       <div style="width:34px;height:34px;border-radius:50%;background:rgba(0,229,160,0.08);border:2px solid ${isMe?'var(--accent)':'var(--border)'};display:flex;align-items:center;justify-content:center;flex-shrink:0;overflow:hidden;">${avatarInner}</div>
       <div style="flex:1;min-width:0;">
         <div style="font-size:14px;font-weight:700;display:flex;align-items:center;gap:6px;">${p.username}${isMe?`<span style="font-size:10px;background:var(--accent);color:var(--bg);padding:2px 6px;border-radius:4px;font-weight:700;">YOU</span>`:''}</div>
         <div style="height:5px;background:var(--border);border-radius:3px;margin-top:5px;overflow:hidden;"><div style="height:100%;width:${pct}%;background:${i<3?'var(--accent)':'var(--muted)'};border-radius:3px;"></div></div>
       </div>
       <div style="text-align:right;flex-shrink:0;">
-        <div style="font-family:'Bebas Neue',cursive;font-size:24px;color:${i<3?'var(--accent)':'var(--text)'};line-height:1;">${p.pts}</div>
+        <div style="font-weight:800;letter-spacing:-0.5px;font-size:24px;color:${i<3?'var(--accent)':'var(--text)'};line-height:1;">${p.pts}</div>
         <div style="font-size:10px;color:var(--muted);">${p.wins}W · ${p.losses}L</div>
       </div>
     </div>`;
@@ -1359,7 +1359,7 @@ async function openProfileScreen(uidOrUsername){
               <div style="font-size:11px;color:var(--muted);margin-top:2px;">${fmtDate(th.date)} · ${th.ppg||24}pts/game</div>
             </div>
             <div style="text-align:right;flex-shrink:0;">
-              <div style="font-family:'Bebas Neue',cursive;font-size:26px;color:var(--accent);line-height:1;">${th.points}</div>
+              <div style="font-weight:800;letter-spacing:-0.5px;font-size:26px;color:var(--accent);line-height:1;">${th.points}</div>
               <div style="font-size:10px;color:var(--muted);">pts</div>
             </div>
             <div style="font-size:18px;flex-shrink:0;color:var(--muted);transition:transform 0.2s;" id="hist-chevron-${idx}">›</div>
@@ -1369,19 +1369,19 @@ async function openProfileScreen(uidOrUsername){
           </div>`:''}
           <div style="display:flex;gap:10px;margin-top:10px;">
             <div style="flex:1;background:var(--surface);border-radius:8px;padding:7px 6px;text-align:center;">
-              <div style="font-family:'Bebas Neue',cursive;font-size:18px;color:${rankColor};">${rankMedal||rankStr}</div>
+              <div style="font-weight:800;letter-spacing:-0.5px;font-size:18px;color:${rankColor};">${rankMedal||rankStr}</div>
               <div style="font-size:9px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:var(--muted);">Rank</div>
             </div>
             <div style="flex:1;background:var(--surface);border-radius:8px;padding:7px 6px;text-align:center;">
-              <div style="font-family:'Bebas Neue',cursive;font-size:18px;color:var(--accent);">${th.wins}W</div>
+              <div style="font-weight:800;letter-spacing:-0.5px;font-size:18px;color:var(--accent);">${th.wins}W</div>
               <div style="font-size:9px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:var(--muted);">Wins</div>
             </div>
             <div style="flex:1;background:var(--surface);border-radius:8px;padding:7px 6px;text-align:center;">
-              <div style="font-family:'Bebas Neue',cursive;font-size:18px;color:var(--accent2);">${th.losses}L</div>
+              <div style="font-weight:800;letter-spacing:-0.5px;font-size:18px;color:var(--accent2);">${th.losses}L</div>
               <div style="font-size:9px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:var(--muted);">Losses</div>
             </div>
             <div style="flex:1;background:var(--surface);border-radius:8px;padding:7px 6px;text-align:center;">
-              <div style="font-family:'Bebas Neue',cursive;font-size:18px;">${th.played}</div>
+              <div style="font-weight:800;letter-spacing:-0.5px;font-size:18px;">${th.played}</div>
               <div style="font-size:9px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:var(--muted);">Matches</div>
             </div>
           </div>
@@ -1537,7 +1537,7 @@ function renderTopBar(){
       </div>
       <div style="text-align:right;display:flex;flex-direction:column;align-items:flex-end;gap:4px;">
         <div id="top-avatar-btn-tourn" onclick="toggleDropdown()" style="cursor:pointer;"></div>
-        <div style="font-family:'Bebas Neue',cursive;font-size:28px;color:var(--accent);line-height:1;">${pct}%</div>
+        <div style="font-weight:800;letter-spacing:-0.5px;font-size:28px;color:var(--accent);line-height:1;">${pct}%</div>
         <div style="color:var(--muted);font-size:11px;">${savedM}/${totalM} played</div>
       </div>
     </div>
@@ -2070,16 +2070,16 @@ function renderLbBody(allPlayers){
     const pct=Math.round(p.pts/maxPts*100);
     const isMe=currentUser&&currentUser.uid===p.uid;
     const medal=medals[i]||null;
-    const av=p.avatar?`<img src="${p.avatar}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;"/>`:`<span style="font-family:'Bebas Neue',cursive;font-size:13px;color:var(--accent);">${p.displayName[0].toUpperCase()}</span>`;
+    const av=p.avatar?`<img src="${p.avatar}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;"/>`:`<span style="font-weight:800;letter-spacing:-0.5px;font-size:13px;color:var(--accent);">${p.displayName[0].toUpperCase()}</span>`;
     html+=`<div onclick="openLbProfile('${p.uid}')" style="display:flex;align-items:center;gap:10px;padding:10px 12px;background:${isMe?'rgba(0,229,160,0.07)':i<3?'var(--card)':'var(--surface)'};border:1px solid ${isMe?'rgba(0,229,160,0.3)':i<3?'var(--border)':'transparent'};border-radius:12px;margin-bottom:7px;cursor:pointer;">
-      <div style="font-family:'Bebas Neue',cursive;font-size:${i<3?'20':'16'}px;min-width:24px;text-align:center;color:${i===0?'var(--accent3)':i===1?'#aaa':i===2?'#cd7f32':'var(--muted)'};">${medal||i+1}</div>
+      <div style="font-weight:800;letter-spacing:-0.5px;font-size:${i<3?'20':'16'}px;min-width:24px;text-align:center;color:${i===0?'var(--accent3)':i===1?'#aaa':i===2?'#cd7f32':'var(--muted)'};">${medal||i+1}</div>
       <div style="width:34px;height:34px;border-radius:50%;background:rgba(0,229,160,0.08);border:2px solid ${isMe?'var(--accent)':'var(--border)'};display:flex;align-items:center;justify-content:center;flex-shrink:0;overflow:hidden;">${av}</div>
       <div style="flex:1;min-width:0;">
         <div style="font-size:13px;font-weight:700;display:flex;align-items:center;gap:5px;">${p.displayName}${isMe?`<span style="font-size:9px;background:var(--accent);color:var(--bg);padding:2px 5px;border-radius:4px;font-weight:700;">YOU</span>`:''}</div>
         <div style="height:4px;background:var(--border);border-radius:2px;margin-top:5px;overflow:hidden;"><div style="height:100%;width:${pct}%;background:${i<3?'var(--accent)':'var(--muted)'};border-radius:2px;"></div></div>
       </div>
       <div style="text-align:right;flex-shrink:0;">
-        <div style="font-family:'Bebas Neue',cursive;font-size:22px;color:${i<3?'var(--accent)':'var(--text)'};line-height:1;">${p.pts}</div>
+        <div style="font-weight:800;letter-spacing:-0.5px;font-size:22px;color:${i<3?'var(--accent)':'var(--text)'};line-height:1;">${p.pts}</div>
         <div style="font-size:10px;color:var(--muted);">${p.wins}W · ${p.losses}L</div>
       </div>
     </div>`;
