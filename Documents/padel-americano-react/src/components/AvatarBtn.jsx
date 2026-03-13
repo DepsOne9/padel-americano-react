@@ -18,11 +18,7 @@ export default function AvatarBtn() {
 
   return (
     <>
-      <div
-        className="avatar-btn"
-        style={extraStyle}
-        onClick={() => setOpen(true)}
-      >
+      <div className="avatar-btn" style={extraStyle} onClick={() => setOpen(true)}>
         {avatarContent}
       </div>
       {open && <AvatarDropdown onClose={() => setOpen(false)} />}

@@ -31,25 +31,6 @@ function generateSchedule(players, numRounds) {
   return rounds
 }
 
-const PadelBtnSVG = () => (
-  <svg width="20" height="24" viewBox="0 0 100 120" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: 6 }}>
-    <ellipse cx="50" cy="42" rx="32" ry="36" fill="currentColor" opacity="0.15" stroke="currentColor" strokeWidth="6"/>
-    <circle cx="38" cy="28" r="4" fill="currentColor" opacity="0.5"/>
-    <circle cx="50" cy="28" r="4" fill="currentColor" opacity="0.5"/>
-    <circle cx="62" cy="28" r="4" fill="currentColor" opacity="0.5"/>
-    <circle cx="32" cy="40" r="4" fill="currentColor" opacity="0.5"/>
-    <circle cx="44" cy="40" r="4" fill="currentColor" opacity="0.5"/>
-    <circle cx="56" cy="40" r="4" fill="currentColor" opacity="0.5"/>
-    <circle cx="68" cy="40" r="4" fill="currentColor" opacity="0.5"/>
-    <circle cx="38" cy="52" r="4" fill="currentColor" opacity="0.5"/>
-    <circle cx="50" cy="52" r="4" fill="currentColor" opacity="0.5"/>
-    <circle cx="62" cy="52" r="4" fill="currentColor" opacity="0.5"/>
-    <path d="M 40 74 Q 50 80 60 74" stroke="currentColor" strokeWidth="5" fill="none"/>
-    <rect x="44" y="78" width="12" height="28" rx="5" fill="currentColor" opacity="0.7"/>
-    <rect x="40" y="98" width="20" height="6" rx="3" fill="currentColor" opacity="0.4"/>
-  </svg>
-)
-
 export default function Setup() {
   const navigate = useNavigate()
   const { currentUser } = useAuth()
@@ -87,10 +68,8 @@ export default function Setup() {
     if (players.length < 4) { toast('Need at least 4 players', true); return }
     const code = Math.random().toString(36).slice(2, 7).toUpperCase()
     const T = {
-      code,
-      name: name.trim() || 'Americano Tournament',
-      pointsPerGame: parseInt(ppg),
-      players,
+      code, name: name.trim() || 'Americano Tournament',
+      pointsPerGame: parseInt(ppg), players,
       rounds: generateSchedule(players, parseInt(numRounds)),
       byeOption: players.length % 4 !== 0 ? byeChoice : null,
       createdAt: new Date().toISOString(),
@@ -112,9 +91,9 @@ export default function Setup() {
 
   return (
     <div className="screen">
-      <TopBar title="NEW TOURNAMENT" subtitle="Configure your session" showBack onBack={() => navigate('/')} />
+      <TopBar title="new" subtitle="Configure your session" showBack onBack={() => navigate('/')} />
 
-      <div className="wrap" style={{ paddingTop: 4 }}>
+      <div className="wrap" style={{ paddingTop: 8 }}>
         <div className="fg">
           <label>Tournament Name</label>
           <input type="text" placeholder="e.g. Saturday Americano" value={name} onChange={e => setName(e.target.value)} />
@@ -150,14 +129,14 @@ export default function Setup() {
         <div className="sec">Player Names</div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 14 }}>
           {playerNames.map((val, i) => (
-            <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <span style={{ fontWeight: 700, fontSize: 15, color: 'var(--accent)', minWidth: 26, textAlign: 'center' }}>{i + 1}</span>
+            <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              <span style={{ fontWeight: 800, fontSize: 14, color: 'var(--accent)', minWidth: 24, textAlign: 'center' }}>{i + 1}</span>
               <input
                 type="text"
                 placeholder={`Player ${i + 1}`}
                 value={val}
                 onChange={e => setPlayerName(i, e.target.value)}
-                style={{ flex: 1, background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 10, padding: '11px 14px', color: 'var(--text)', fontSize: 15, outline: 'none' }}
+                style={{ flex: 1, background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 12, padding: '11px 14px', color: 'var(--text)', fontSize: 15, fontWeight: 500, outline: 'none' }}
               />
             </div>
           ))}
@@ -182,7 +161,7 @@ export default function Setup() {
         )}
 
         <button className="btn btn-primary" onClick={create} disabled={loading}>
-          <PadelBtnSVG />{loading ? 'Saving…' : 'START & SHARE'}
+          {loading ? 'Saving…' : '🎾 Start & Share'}
         </button>
       </div>
     </div>

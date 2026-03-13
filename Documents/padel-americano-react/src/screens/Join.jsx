@@ -25,9 +25,9 @@ export default function Join() {
 
   return (
     <div className="screen">
-      <TopBar title="JOIN" subtitle="Enter tournament code" showBack onBack={() => navigate('/')} />
+      <TopBar title="join" subtitle="Enter tournament code" showBack onBack={() => navigate('/')} />
 
-      <div className="wrap" style={{ paddingTop: 8 }}>
+      <div className="wrap" style={{ paddingTop: 12 }}>
         <div className="card">
           <div className="fg">
             <label>Tournament Code</label>
@@ -38,11 +38,11 @@ export default function Join() {
               value={code}
               onChange={e => setCode(e.target.value.toUpperCase())}
               onKeyDown={e => e.key === 'Enter' && doJoin()}
-              style={{ fontSize: 28, fontWeight: 700, textAlign: 'center', letterSpacing: 8, textTransform: 'uppercase' }}
+              style={{ fontSize: 32, fontWeight: 800, textAlign: 'center', letterSpacing: 8, textTransform: 'uppercase' }}
             />
           </div>
           <button className="btn btn-primary" onClick={doJoin} disabled={loading}>
-            {loading ? 'Searching…' : 'JOIN →'}
+            {loading ? 'Searching…' : 'Join →'}
           </button>
         </div>
       </div>

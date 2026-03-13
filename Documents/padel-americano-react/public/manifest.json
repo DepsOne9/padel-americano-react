@@ -1,0 +1,25 @@
+{
+  "name": "Padel Americano",
+  "short_name": "Padel",
+  "description": "Americano tournament tracker for padel",
+  "start_url": "/padel-americano-react/",
+  "scope": "/padel-americano-react/",
+  "display": "standalone",
+  "background_color": "#080f1e",
+  "theme_color": "#080f1e",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "/padel-americano-react/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/padel-americano-react/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

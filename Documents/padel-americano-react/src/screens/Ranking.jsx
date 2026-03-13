@@ -33,9 +33,9 @@ function buildRows(allPlayers, period) {
 export default function Ranking() {
   const navigate = useNavigate()
   const { currentUser } = useAuth()
-  const [period, setPeriod]       = useState('yearly')
+  const [period, setPeriod]         = useState('yearly')
   const [allPlayers, setAllPlayers] = useState(null)
-  const [error, setError]         = useState(false)
+  const [error, setError]           = useState(false)
 
   useEffect(() => {
     fbGet('players')
@@ -52,23 +52,19 @@ export default function Ranking() {
 
   const openProfile = (uid) => navigate(`/profile?uid=${uid}&back=ranking`)
 
-  if (error) {
-    return (
-      <div className="screen">
-        <TopBar title="RANKING" subtitle="Global Leaderboard" />
-        <div className="empty" style={{ marginTop: 40 }}><div className="ei">⚠️</div>Could not load data — check your connection</div>
-      </div>
-    )
-  }
+  if (error) return (
+    <div className="screen">
+      <TopBar title="rank" subtitle="Global Leaderboard" />
+      <div className="empty" style={{ marginTop: 40 }}><div className="ei">⚠️</div>Could not load data — check your connection</div>
+    </div>
+  )
 
-  if (allPlayers === null) {
-    return (
-      <div className="screen">
-        <TopBar title="RANKING" subtitle="Global Leaderboard" />
-        <div className="spinner" style={{ marginTop: 60 }} />
-      </div>
-    )
-  }
+  if (allPlayers === null) return (
+    <div className="screen">
+      <TopBar title="rank" subtitle="Global Leaderboard" />
+      <div className="spinner" style={{ marginTop: 60 }} />
+    </div>
+  )
 
   const rows = buildRows(allPlayers, period)
   const maxPts = rows.length && rows[0].pts > 0 ? rows[0].pts : 1
@@ -82,9 +78,8 @@ export default function Ranking() {
 
   return (
     <div className="screen">
-      <TopBar title="RANKING" subtitle="Global Leaderboard" />
+      <TopBar title="rank" subtitle="Global Leaderboard" />
 
-      {/* period tabs */}
       <div className="lb-tabs">
         <div className={`lb-tab${period === 'yearly'  ? ' on' : ''}`} onClick={() => setPeriod('yearly')}>📅 {YEAR_LABEL}</div>
         <div className={`lb-tab${period === 'monthly' ? ' on' : ''}`} onClick={() => setPeriod('monthly')}>🗓 {MONTH_LABEL}</div>
@@ -97,7 +92,6 @@ export default function Ranking() {
           </div>
         ) : (
           <>
-            {/* podium */}
             <div className="podium-wrap">
               {podOrder.map((p, i) => {
                 if (!p) return null
@@ -120,7 +114,6 @@ export default function Ranking() {
               })}
             </div>
 
-            {/* ranked list */}
             <div className="lb-section">
               <div className="lb-section-title">{periodLabel} · {rows.length} Players</div>
               {rows.map((p, i) => {
@@ -136,20 +129,20 @@ export default function Ranking() {
                       padding: '10px 12px',
                       background: isMe ? 'rgba(0,229,160,0.07)' : i < 3 ? 'var(--card)' : 'var(--surface)',
                       border: `1px solid ${isMe ? 'rgba(0,229,160,0.3)' : i < 3 ? 'var(--border)' : 'transparent'}`,
-                      borderRadius: 12, marginBottom: 7, cursor: 'pointer',
+                      borderRadius: 14, marginBottom: 7, cursor: 'pointer',
                     }}
                   >
-                    <div style={{ fontFamily: "'Bebas Neue', cursive", fontSize: i < 3 ? 20 : 16, minWidth: 24, textAlign: 'center', color: i === 0 ? 'var(--accent3)' : i === 1 ? '#aaa' : i === 2 ? '#cd7f32' : 'var(--muted)' }}>
+                    <div style={{ fontSize: i < 3 ? 18 : 14, fontWeight: 800, minWidth: 24, textAlign: 'center', color: i === 0 ? 'var(--accent3)' : i === 1 ? '#aaa' : i === 2 ? '#cd7f32' : 'var(--muted)', letterSpacing: '-0.5px' }}>
                       {medal || i + 1}
                     </div>
-                    <div style={{ width: 34, height: 34, borderRadius: '50%', background: 'rgba(0,229,160,0.08)', border: `2px solid ${isMe ? 'var(--accent)' : 'var(--border)'}`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, overflow: 'hidden' }}>
+                    <div style={{ width: 34, height: 34, borderRadius: '50%', background: 'rgba(0,229,160,0.08)', border: `1.5px solid ${isMe ? 'var(--accent)' : 'var(--border)'}`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, overflow: 'hidden' }}>
                       {p.avatar
                         ? <img src={p.avatar} style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }} alt="" />
-                        : <span style={{ fontFamily: "'Bebas Neue', cursive", fontSize: 13, color: 'var(--accent)' }}>{p.displayName[0].toUpperCase()}</span>
+                        : <span style={{ fontSize: 13, fontWeight: 800, color: 'var(--accent)' }}>{p.displayName[0].toUpperCase()}</span>
                       }
                     </div>
                     <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ fontSize: 13, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 5 }}>
+                      <div style={{ fontSize: 13, fontWeight: 700, letterSpacing: '-0.3px', display: 'flex', alignItems: 'center', gap: 5 }}>
                         {p.displayName}
                         {isMe && <span style={{ fontSize: 9, background: 'var(--accent)', color: 'var(--bg)', padding: '2px 5px', borderRadius: 4, fontWeight: 700 }}>YOU</span>}
                       </div>
@@ -158,7 +151,7 @@ export default function Ranking() {
                       </div>
                     </div>
                     <div style={{ textAlign: 'right', flexShrink: 0 }}>
-                      <div style={{ fontFamily: "'Bebas Neue', cursive", fontSize: 22, color: i < 3 ? 'var(--accent)' : 'var(--text)', lineHeight: 1 }}>{p.pts}</div>
+                      <div style={{ fontSize: 20, fontWeight: 800, letterSpacing: '-0.5px', color: i < 3 ? 'var(--accent)' : 'var(--text)', lineHeight: 1 }}>{p.pts}</div>
                       <div style={{ fontSize: 10, color: 'var(--muted)' }}>{p.wins}W · {p.losses}L</div>
                     </div>
                   </div>

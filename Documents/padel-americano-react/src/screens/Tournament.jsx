@@ -7,7 +7,6 @@ import { upsertMyTournament } from './Home'
 import { showConfirm } from '../components/ConfirmModal'
 import AvatarBtn from '../components/AvatarBtn'
 
-// ── helpers ──────────────────────────────────────────────
 function fmtDate(iso) {
   if (!iso) return ''
   try { return new Date(iso).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) } catch (e) { return '' }
@@ -50,7 +49,6 @@ async function commitTournamentToProfiles(T, currentUser) {
   const standings = computeStandings(T)
   let allPlayers = {}
   try { const d = await fbGet('players'); if (d) allPlayers = d } catch (e) { return }
-
   const byDisplayName = {}, byUsername = {}
   Object.entries(allPlayers).forEach(([uid, p]) => {
     if (!p.username) return
@@ -58,7 +56,6 @@ async function commitTournamentToProfiles(T, currentUser) {
     const dn = (p.displayName || p.username).toLowerCase().trim()
     byDisplayName[dn] = { uid, p }
   })
-
   let linked = 0
   for (const st of standings) {
     const nameNorm = st.name.toLowerCase().trim()
@@ -80,7 +77,6 @@ async function commitTournamentToProfiles(T, currentUser) {
     const savedPlayer = { ...player, tournaments: updated }
     await fbSet(`players/${uid}`, savedPlayer)
     if (currentUser?.uid === uid) {
-      // Update session via a custom event so AuthContext can pick it up
       window.dispatchEvent(new CustomEvent('profile-updated', { detail: savedPlayer }))
     }
     linked++
@@ -88,7 +84,7 @@ async function commitTournamentToProfiles(T, currentUser) {
   if (linked > 0) toast(`Linked results to ${linked} player account${linked > 1 ? 's' : ''}! 🔗`)
 }
 
-// ── Match component ───────────────────────────────────────
+// ── Match Card ────────────────────────────────────────────
 function MatchCard({ match, ri, mi, ppg, isCompleted, onSave, onEdit, onPlayerTap }) {
   const [sA, setSA] = useState(match.scoreA ?? '')
   const [sB, setSB] = useState(match.scoreB ?? '')
@@ -103,18 +99,8 @@ function MatchCard({ match, ri, mi, ppg, isCompleted, onSave, onEdit, onPlayerTa
   const tot = (parseInt(sA) || 0) + (parseInt(sB) || 0)
   const over = tot > ppg
 
-  const handleInputA = (v) => {
-    const val = Math.max(0, parseInt(v) || 0)
-    setSA(val)
-    const rem = ppg - val
-    if (rem >= 0) setSB(rem)
-  }
-  const handleInputB = (v) => {
-    const val = Math.max(0, parseInt(v) || 0)
-    setSB(val)
-    const rem = ppg - val
-    if (rem >= 0) setSA(rem)
-  }
+  const handleInputA = (v) => { const val = Math.max(0, parseInt(v) || 0); setSA(val); const rem = ppg - val; if (rem >= 0) setSB(rem) }
+  const handleInputB = (v) => { const val = Math.max(0, parseInt(v) || 0); setSB(val); const rem = ppg - val; if (rem >= 0) setSA(rem) }
 
   const save = () => {
     const a = parseInt(sA) || 0, b = parseInt(sB) || 0
@@ -138,7 +124,7 @@ function MatchCard({ match, ri, mi, ppg, isCompleted, onSave, onEdit, onPlayerTa
           <div style={{ textAlign: 'center', flexShrink: 0, minWidth: 80 }}>
             <div className="saved-score">
               <span style={{ color: wA ? 'var(--accent)' : 'var(--muted)' }}>{match.scoreA}</span>
-              <span style={{ color: 'var(--muted)', fontSize: 22 }}> – </span>
+              <span style={{ color: 'var(--muted)', fontSize: 22, fontWeight: 400 }}> – </span>
               <span style={{ color: !wA ? 'var(--accent2)' : 'var(--muted)' }}>{match.scoreB}</span>
             </div>
           </div>
@@ -194,27 +180,19 @@ function MatchCard({ match, ri, mi, ppg, isCompleted, onSave, onEdit, onPlayerTa
         {over ? `⚠ Total ${tot} exceeds ${ppg} max` : `${tot} / ${ppg} pts · ${ppg - tot} left`}
       </div>
       <div className="score-row">
-        <input
-          className={`score-inp${over ? ' over' : ''}`}
-          type="number" placeholder="0" value={sA === '' ? '' : sA}
-          onChange={e => handleInputA(e.target.value)}
-        />
+        <input className={`score-inp${over ? ' over' : ''}`} type="number" placeholder="0" value={sA === '' ? '' : sA} onChange={e => handleInputA(e.target.value)} />
         <div className="score-dash">–</div>
-        <input
-          className={`score-inp${over ? ' over' : ''}`}
-          type="number" placeholder="0" value={sB === '' ? '' : sB}
-          onChange={e => handleInputB(e.target.value)}
-        />
+        <input className={`score-inp${over ? ' over' : ''}`} type="number" placeholder="0" value={sB === '' ? '' : sB} onChange={e => handleInputB(e.target.value)} />
       </div>
       <div style={{ display: 'flex', gap: 8 }}>
-        <button className="btn btn-primary btn-sm" style={{ flex: 1 }} onClick={save}>SAVE SCORE</button>
+        <button className="btn btn-primary btn-sm" style={{ flex: 1 }} onClick={save}>Save Score</button>
         <button className="btn btn-secondary btn-sm" onClick={() => setEntryOpen(false)} style={{ padding: '9px 14px' }}>✕</button>
       </div>
     </div>
   )
 }
 
-// ── Ranking pane ──────────────────────────────────────────
+// ── Ranking Pane ──────────────────────────────────────────
 function RankingPane({ T, onPlayerTap }) {
   const [lbTab, setLbTab] = useState('points')
   const standings = computeStandings(T)
@@ -230,7 +208,6 @@ function RankingPane({ T, onPlayerTap }) {
   const top = standings.slice(0, Math.min(3, standings.length))
   const order = top.length >= 3 ? [top[1], top[0], top[2]] : top.length === 2 ? [top[1], top[0]] : [top[0]]
   const cls   = top.length >= 3 ? ['p2','p1','p3']          : top.length === 2 ? ['p2','p1']         : ['p1']
-  const medals = { p1: '🥇', p2: '🥈', p3: '🥉' }
 
   const val = (p) => lbTab === 'points' ? p.points
     : lbTab === 'winrate' ? `${p.played ? Math.round(p.wins / ((p.wins + p.losses) || 1) * 100) : 0}%`
@@ -249,7 +226,7 @@ function RankingPane({ T, onPlayerTap }) {
       <div className="podium-wrap">
         {order.map((p, i) => p && (
           <div key={p.name} className={`pod ${cls[i]}`} onClick={() => onPlayerTap(p.name)}>
-            {cls[i] === 'p1' && <div style={{ fontSize: 20, marginBottom: 4 }}>{medals[cls[i]]}</div>}
+            {cls[i] === 'p1' && <div style={{ fontSize: 20, marginBottom: 4 }}>🥇</div>}
             <div className="pod-avatar">{p.name[0].toUpperCase()}</div>
             <div className="pod-name">{p.name}</div>
             <div className="pod-pts">{val(p)}</div>
@@ -322,7 +299,7 @@ function RankingPane({ T, onPlayerTap }) {
   )
 }
 
-// ── Partners pane ─────────────────────────────────────────
+// ── Partners Pane ─────────────────────────────────────────
 function PartnersPane({ T, onPlayerTap }) {
   const partners = {}, upcoming = {}
   T.players.forEach(p => { partners[p] = new Set(); upcoming[p] = new Set() })
@@ -344,17 +321,17 @@ function PartnersPane({ T, onPlayerTap }) {
         const notYet = Array.from(upcoming[p]).filter(x => !played.includes(x))
         return (
           <div key={p} className="card fade-up">
-            <div style={{ fontWeight: 600, fontSize: 15, marginBottom: 8, cursor: 'pointer' }} onClick={() => onPlayerTap(p)}>{p}</div>
+            <div style={{ fontWeight: 700, fontSize: 15, marginBottom: 8, cursor: 'pointer', letterSpacing: '-0.3px' }} onClick={() => onPlayerTap(p)}>{p}</div>
             {played.length
               ? <>
-                  <div style={{ fontSize: 11, color: 'var(--muted)', letterSpacing: 1, textTransform: 'uppercase', marginBottom: 4 }}>Played with</div>
+                  <div style={{ fontSize: 11, color: 'var(--muted)', letterSpacing: 1, textTransform: 'uppercase', marginBottom: 4, fontWeight: 700 }}>Played with</div>
                   <div className="tags-wrap">{played.map(q => <span key={q} className="ptag">✓ {q}</span>)}</div>
                 </>
               : <div style={{ color: 'var(--muted)', fontSize: 13 }}>No matches yet</div>
             }
             {notYet.length > 0 && (
               <>
-                <div style={{ fontSize: 11, color: 'var(--muted)', letterSpacing: 1, textTransform: 'uppercase', margin: '8px 0 4px' }}>Scheduled with</div>
+                <div style={{ fontSize: 11, color: 'var(--muted)', letterSpacing: 1, textTransform: 'uppercase', margin: '8px 0 4px', fontWeight: 700 }}>Scheduled with</div>
                 <div className="tags-wrap">{notYet.map(q => <span key={q} className="ptag-sched">{q}</span>)}</div>
               </>
             )}
@@ -365,12 +342,11 @@ function PartnersPane({ T, onPlayerTap }) {
   )
 }
 
-// ── Main component ────────────────────────────────────────
+// ── Main ──────────────────────────────────────────────────
 export default function Tournament() {
   const { code } = useParams()
   const navigate = useNavigate()
   const { currentUser } = useAuth()
-
   const [T, setT] = useState(null)
   const [activeTab, setActiveTab] = useState('rounds')
   const [copiedCode, setCopiedCode] = useState(false)
@@ -384,13 +360,8 @@ export default function Tournament() {
       if (!data) { toast('Tournament not found', true); navigate('/'); return }
       setT(data)
     })
-    unsubRef.current = fbListen(`tournaments/${code}`, d => {
-      if (mounted) setT(d)
-    })
-    return () => {
-      mounted = false
-      if (unsubRef.current) try { unsubRef.current() } catch (e) {}
-    }
+    unsubRef.current = fbListen(`tournaments/${code}`, d => { if (mounted) setT(d) })
+    return () => { mounted = false; if (unsubRef.current) try { unsubRef.current() } catch (e) {} }
   }, [code])
 
   if (!T) return <div style={{ padding: 40, textAlign: 'center' }}><div className="spinner" /></div>
@@ -428,8 +399,7 @@ export default function Tournament() {
     const confirmed = await showConfirm('Mark as Complete', 'This will lock scoring and save results to player profiles. Continue?', 'Complete 🏁')
     if (!confirmed) return
     const updated = { ...T, status: 'completed', completedAt: new Date().toISOString() }
-    await saveT(updated)
-    upsertMyTournament(updated, true)
+    await saveT(updated); upsertMyTournament(updated, true)
     await commitTournamentToProfiles(updated, currentUser)
     toast('Tournament completed! Results saved 🏆')
   }
@@ -439,8 +409,7 @@ export default function Tournament() {
     if (!confirmed) return
     const updated = { ...T, status: 'active' }
     delete updated.completedAt
-    await saveT(updated)
-    upsertMyTournament(updated, true)
+    await saveT(updated); upsertMyTournament(updated, true)
     toast('Tournament reopened — scoring unlocked 🔓')
   }
 
@@ -451,14 +420,12 @@ export default function Tournament() {
     const list = JSON.parse(localStorage.getItem('pa_my_tourneys') || '[]').filter(t => t.code !== T.code)
     localStorage.setItem('pa_my_tourneys', JSON.stringify(list))
     if (unsubRef.current) try { unsubRef.current() } catch (e) {}
-    navigate('/games')
-    toast('Tournament deleted')
+    navigate('/games'); toast('Tournament deleted')
   }
 
   const copyCode = () => {
     navigator.clipboard.writeText(T.code).catch(() => {})
-    setCopiedCode(true)
-    setTimeout(() => setCopiedCode(false), 2000)
+    setCopiedCode(true); setTimeout(() => setCopiedCode(false), 2000)
   }
 
   const shareLink = () => {
@@ -467,8 +434,7 @@ export default function Tournament() {
       navigator.share({ title: T.name, text: `Join my Padel Americano tournament "${T.name}"! 🎾 Code: ${T.code}`, url }).catch(() => {})
     } else {
       navigator.clipboard.writeText(url).catch(() => {})
-      setCopiedLink(true)
-      setTimeout(() => setCopiedLink(false), 2000)
+      setCopiedLink(true); setTimeout(() => setCopiedLink(false), 2000)
     }
   }
 
@@ -484,99 +450,83 @@ export default function Tournament() {
             (p.username || '').toLowerCase() === nameNorm.replace(/\s+/g, '_')
           )
         )
-        if (entry) {
-          navigate(`/profile?uid=${entry[0]}&back=tournament`)
-          return
-        }
+        if (entry) { navigate(`/profile?uid=${entry[0]}&back=tournament`); return }
       }
     } catch (e) {}
-    // no linked account — do nothing silently
   }
 
-  // ── Top bar ──
   const TopBarArea = () => (
     <div style={{ background: 'var(--surface)', borderBottom: '1px solid var(--border)', padding: '10px 16px 0' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 6 }}>
         <div>
-          <div style={{ fontWeight: 700, fontSize: 17, marginBottom: 2 }}>{T.name}</div>
+          <div style={{ fontWeight: 800, fontSize: 17, marginBottom: 2, letterSpacing: '-0.5px' }}>{T.name}</div>
           <div style={{ color: 'var(--muted)', fontSize: 12 }}>{T.players.length} players · {T.pointsPerGame}pts · {T.rounds.length} rounds</div>
         </div>
         <div style={{ textAlign: 'right', display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 4 }}>
           <AvatarBtn />
-          <div style={{ fontFamily: "'Bebas Neue', cursive", fontSize: 28, color: 'var(--accent)', lineHeight: 1 }}>{pct}%</div>
+          <div style={{ fontSize: 28, fontWeight: 800, color: 'var(--accent)', lineHeight: 1, letterSpacing: '-1px' }}>{pct}%</div>
           <div style={{ color: 'var(--muted)', fontSize: 11 }}>{savedM}/{totalM} played</div>
         </div>
       </div>
       <div className="prog-wrap"><div className="prog-fill" style={{ width: `${pct}%` }} /></div>
       <div className="share-bar">
         <div>
-          <div style={{ fontSize: 10, letterSpacing: 2, textTransform: 'uppercase', color: 'var(--muted)', marginBottom: 2 }}>Share Code</div>
+          <div style={{ fontSize: 10, letterSpacing: 2, textTransform: 'uppercase', color: 'var(--muted)', marginBottom: 2, fontWeight: 700 }}>Share Code</div>
           <div className="share-code">{T.code}</div>
         </div>
         <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
-          <button className={`copy-btn${copiedCode ? ' done' : ''}`} onClick={copyCode}>
-            {copiedCode ? '✓ Copied!' : '📋 Copy'}
-          </button>
-          <button className={`copy-btn${copiedLink ? ' done' : ''}`} onClick={shareLink}>
-            {copiedLink ? '✓ Copied!' : '🔗 Share'}
-          </button>
+          <button className={`copy-btn${copiedCode ? ' done' : ''}`} onClick={copyCode}>{copiedCode ? '✓ Copied!' : '📋 Copy'}</button>
+          <button className={`copy-btn${copiedLink ? ' done' : ''}`} onClick={shareLink}>{copiedLink ? '✓ Copied!' : '🔗 Share'}</button>
         </div>
       </div>
       {isCreator && (
         <div style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
           {isCompleted ? (
             <>
-              <div style={{ flex: 1, padding: '9px 10px', background: 'rgba(107,127,163,0.08)', border: '1px solid var(--border)', borderRadius: 10, textAlign: 'center', fontSize: 12, fontWeight: 700, color: 'var(--muted)' }}>
+              <div style={{ flex: 1, padding: '9px 10px', background: 'rgba(107,127,163,0.08)', border: '1px solid var(--border)', borderRadius: 12, textAlign: 'center', fontSize: 12, fontWeight: 700, color: 'var(--muted)' }}>
                 ✅ Completed
               </div>
-              <button onClick={handleReopen} style={{ flex: 1, padding: '9px 10px', background: 'rgba(0,229,160,0.07)', border: '1px solid rgba(0,229,160,0.25)', borderRadius: 10, color: 'var(--accent)', fontSize: 13, fontWeight: 700, cursor: 'pointer' }}>
+              <button onClick={handleReopen} style={{ flex: 1, padding: '9px 10px', background: 'rgba(0,229,160,0.07)', border: '1px solid rgba(0,229,160,0.2)', borderRadius: 12, color: 'var(--accent)', fontSize: 13, fontWeight: 700, cursor: 'pointer' }}>
                 🔓 Reopen
               </button>
             </>
           ) : (
-            <button onClick={handleMarkComplete} style={{ flex: 1, padding: '9px 10px', background: 'rgba(255,209,102,0.08)', border: '1px solid rgba(255,209,102,0.25)', borderRadius: 10, color: 'var(--accent3)', fontSize: 13, fontWeight: 700, cursor: 'pointer' }}>
+            <button onClick={handleMarkComplete} style={{ flex: 1, padding: '9px 10px', background: 'rgba(255,209,102,0.07)', border: '1px solid rgba(255,209,102,0.2)', borderRadius: 12, color: 'var(--accent3)', fontSize: 13, fontWeight: 700, cursor: 'pointer' }}>
               🏁 Complete
             </button>
           )}
-          <button onClick={handleDelete} title="Delete tournament" style={{ padding: '9px 14px', background: 'rgba(255,92,92,0.08)', border: '1px solid rgba(255,92,92,0.25)', borderRadius: 10, color: 'var(--accent2)', fontSize: 18, cursor: 'pointer' }}>
-            🗑
-          </button>
+          <button onClick={handleDelete} style={{ padding: '9px 14px', background: 'rgba(255,92,92,0.07)', border: '1px solid rgba(255,92,92,0.2)', borderRadius: 12, color: 'var(--accent2)', fontSize: 18, cursor: 'pointer' }}>🗑</button>
         </div>
       )}
       {!isCreator && isCompleted && (
-        <div style={{ background: 'rgba(107,127,163,0.08)', border: '1px solid var(--border)', borderRadius: 10, padding: '8px 14px', textAlign: 'center', marginBottom: 8, fontSize: 12, color: 'var(--muted)' }}>
+        <div style={{ background: 'rgba(107,127,163,0.08)', border: '1px solid var(--border)', borderRadius: 12, padding: '8px 14px', textAlign: 'center', marginBottom: 8, fontSize: 12, color: 'var(--muted)' }}>
           ✅ Tournament Completed
         </div>
       )}
     </div>
   )
 
-  // ── Rounds pane ──
   const RoundsPane = () => (
     <div style={{ padding: '0 0 90px' }}>
       {T.rounds.map((round, ri) => {
         const allSaved = round.matches.every(m => m.saved)
         const byePts = T.byeOption === 'half' ? Math.round(T.pointsPerGame / 2) : 0
         return (
-          <div key={ri} style={{ margin: '10px 16px 0', background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 14, padding: 14 }}>
+          <div key={ri} style={{ margin: '10px 16px 0', background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 16, padding: 14 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
-              <div style={{ fontWeight: 700, fontSize: 16 }}>Round {ri + 1}</div>
+              <div style={{ fontWeight: 800, fontSize: 15, letterSpacing: '-0.3px' }}>Round {ri + 1}</div>
               <div className="round-badge">{allSaved ? '✓ Complete' : `${round.matches.length} Court${round.matches.length > 1 ? 's' : ''}`}</div>
             </div>
             {round.byes?.length > 0 && (
-              <div style={{ background: 'rgba(255,209,102,0.08)', border: '1px solid rgba(255,209,102,0.2)', borderRadius: 8, padding: '8px 12px', marginBottom: 8, fontSize: 12, color: 'var(--accent3)' }}>
+              <div style={{ background: 'rgba(255,209,102,0.07)', border: '1px solid rgba(255,209,102,0.2)', borderRadius: 10, padding: '8px 12px', marginBottom: 8, fontSize: 12, color: 'var(--accent3)' }}>
                 🪑 Sitting out: <strong>{round.byes.join(', ')}</strong> · +{byePts} pts
               </div>
             )}
             {round.matches.map((match, mi) => (
               <MatchCard
-                key={`${ri}-${mi}`}
-                match={match} ri={ri} mi={mi}
-                ppg={T.pointsPerGame}
-                isCompleted={isCompleted}
-                onSave={handleSaveScore}
-                onEdit={handleEditScore}
-                onPlayerTap={onPlayerTap}
+                key={`${ri}-${mi}`} match={match} ri={ri} mi={mi}
+                ppg={T.pointsPerGame} isCompleted={isCompleted}
+                onSave={handleSaveScore} onEdit={handleEditScore} onPlayerTap={onPlayerTap}
               />
             ))}
           </div>
@@ -589,21 +539,16 @@ export default function Tournament() {
   return (
     <div style={{ minHeight: '100vh' }}>
       <TopBarArea />
-
       {activeTab === 'rounds'   && <RoundsPane />}
       {activeTab === 'ranking'  && <div style={{ padding: '0 0 90px' }}><RankingPane T={T} onPlayerTap={onPlayerTap} /></div>}
       {activeTab === 'partners' && <div style={{ padding: '12px 16px 90px' }}><PartnersPane T={T} onPlayerTap={onPlayerTap} /></div>}
 
       <div className="tab-bar">
-        <button className="tab-btn" id="tab-home-tourn" onClick={() => navigate('/games')}>
+        <button className="tab-btn" onClick={() => navigate('/games')}>
           <span className="tab-icon">🏠</span>All Games
         </button>
         {['rounds','ranking','partners'].map(tab => (
-          <button
-            key={tab}
-            className={`tab-btn${activeTab === tab ? ' active' : ''}`}
-            onClick={() => setActiveTab(tab)}
-          >
+          <button key={tab} className={`tab-btn${activeTab === tab ? ' active' : ''}`} onClick={() => setActiveTab(tab)}>
             <span className="tab-icon">{tab === 'rounds' ? '📋' : tab === 'ranking' ? '🏆' : '👥'}</span>
             {tab.charAt(0).toUpperCase() + tab.slice(1)}
           </button>
