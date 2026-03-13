@@ -925,6 +925,7 @@ async function cleanupTournaments(){
 }
 
 
+function tournCard(t){
   const isActive=t.status!=='completed';
   const dateStr=t.createdAt?new Date(t.createdAt).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'}):'';
   return `<div class="tlist-card" onclick="reopenTournament('${t.code}')">
