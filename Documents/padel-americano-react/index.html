@@ -247,7 +247,7 @@ input[type=number]{-moz-appearance:textfield;}
 .ws-name{font-size:13px;font-weight:600;flex:1;}
 .ws-bar{flex:2;display:flex;align-items:center;gap:3px;}
 .ws-w{height:8px;background:var(--accent);border-radius:4px 0 0 4px;}
-.ws-d{height:8px;background:var(--accent3);}
+.ws-d{height:8px;background:var(--muted);}
 .ws-l{height:8px;background:var(--accent2);border-radius:0 4px 4px 0;}
 .ws-ratio{font-size:12px;font-weight:700;color:var(--muted);min-width:40px;text-align:right;}
 .lb-footer{padding:14px 16px;display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;}
@@ -553,6 +553,8 @@ function handleAuthReady(detail){
   } else if(profile){
     currentUser = profile;
     _pendingGoogleUser = null;
+    // Sync tournament list from cloud now that we know the user
+    syncTourneysFromCloud();
   } else {
     currentUser = null;
     _pendingGoogleUser = null;
@@ -723,13 +725,39 @@ function renderMyGames(){
 // ═══════════════════════════════════
 let myTournaments=[];
 function loadMyTournaments(){try{const s=localStorage.getItem('pa_my_tourneys');if(s)myTournaments=JSON.parse(s);}catch(e){}}
-function saveMyTournaments(){try{localStorage.setItem('pa_my_tourneys',JSON.stringify(myTournaments));}catch(e){}}
+function saveMyTournaments(){
+  try{localStorage.setItem('pa_my_tourneys',JSON.stringify(myTournaments));}catch(e){}
+  // Also push to Firebase if signed in, so list syncs across devices
+  const fbUser=window._authCurrentUser&&window._authCurrentUser();
+  if(fbUser&&window._fbSet){
+    const codes=myTournaments.map(t=>({code:t.code,name:t.name,createdAt:t.createdAt,status:t.status,isCreator:!!t.isCreator,playerCount:t.playerCount,rounds:t.rounds}));
+    window._fbSet(`players/${fbUser.uid}/myTourneys`,codes).catch(()=>{});
+  }
+}
+async function syncTourneysFromCloud(){
+  const fbUser=window._authCurrentUser&&window._authCurrentUser();
+  if(!fbUser||!navigator.onLine)return;
+  try{
+    const cloud=await window._fbGet(`players/${fbUser.uid}/myTourneys`);
+    if(!cloud||!Array.isArray(cloud))return;
+    // Merge: cloud takes priority for existing codes, append any cloud codes missing locally
+    const localCodes=new Set(myTournaments.map(t=>t.code));
+    cloud.forEach(t=>{
+      if(!localCodes.has(t.code)){myTournaments.unshift(t);}
+      else{const idx=myTournaments.findIndex(x=>x.code===t.code);if(idx>=0)myTournaments[idx]={...myTournaments[idx],...t};}
+    });
+    if(myTournaments.length>50)myTournaments=myTournaments.slice(0,50);
+    try{localStorage.setItem('pa_my_tourneys',JSON.stringify(myTournaments));}catch(e){}
+    renderHomeTournList();
+    renderMyGames();
+  }catch(e){}
+}
 function upsertMyTournament(t,isCreator){
   const entry={code:t.code,name:t.name,createdAt:t.createdAt,status:t.status||'active',
     isCreator:!!isCreator,playerCount:t.players.length,rounds:t.rounds.length};
   const idx=myTournaments.findIndex(x=>x.code===t.code);
   if(idx>=0) myTournaments[idx]=entry; else myTournaments.unshift(entry);
-  if(myTournaments.length>30) myTournaments=myTournaments.slice(0,30);
+  if(myTournaments.length>50) myTournaments=myTournaments.slice(0,50);
   saveMyTournaments();
 }
 loadMyTournaments();
@@ -1990,7 +2018,7 @@ function renderRanking(){
       const wPct=Math.round(p.wins/total*100);
       const dPct=Math.round(p.draws/total*100);
       const lPct=100-wPct-dPct;
-      const drawStr=p.draws>0?` · <span style="color:var(--accent3)">${p.draws}D</span>`:'';
+      const drawStr=p.draws>0?` · ${p.draws}D`:'';
       html+=`<div class="win-strip" onclick="onPlayerTap('${p.name}')">
         <div class="ws-name">${p.name}</div>
         <div class="ws-bar">
