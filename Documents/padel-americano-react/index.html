@@ -405,6 +405,12 @@ input[type=number]{-moz-appearance:textfield;}
         <option value="8" selected>8 players</option><option value="10">10 players</option><option value="12">12 players</option><option value="16">16 players</option>
       </select>
     </div>
+    <div class="fg"><label>Number of Courts</label>
+      <select id="s-courts" onchange="checkBye()">
+        <option value="1">1 court</option>
+        <option value="2" selected>2 courts</option>
+      </select>
+    </div>
     <div class="sec">Player Names</div>
     <div id="player-inputs" style="display:flex;flex-direction:column;gap:8px;margin-bottom:14px;"></div>
     <div id="bye-section" style="display:none;">
@@ -1579,38 +1585,52 @@ function buildPlayerInputs(){
         style="flex:1;background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:11px 14px;color:var(--text);font-size:15px;outline:none;"/>`;
     container.appendChild(row);
   }
+  // Rebuild courts dropdown: max courts = floor(n/4), min 1
+  const maxCourts=Math.floor(n/4);
+  const courtsEl=document.getElementById('s-courts');
+  const prevCourts=parseInt(courtsEl.value)||1;
+  courtsEl.innerHTML='';
+  for(let c=1;c<=maxCourts;c++){
+    const opt=document.createElement('option');
+    opt.value=c;opt.textContent=`${c} court${c>1?'s':''}`;
+    if(c===Math.min(prevCourts,maxCourts))opt.selected=true;
+    courtsEl.appendChild(opt);
+  }
   checkBye();
 }
-buildPlayerInputs();
 
 function checkBye(){
   const n=parseInt(document.getElementById('s-nplayers').value);
   const ppg=parseInt(document.getElementById('s-ppg').value);
-  const courts=Math.floor(n/4),byes=n-courts*4;
+  const courts=parseInt(document.getElementById('s-courts').value)||Math.floor(n/4);
+  const active=courts*4,byes=n-active;
   const sec=document.getElementById('bye-section');
   if(byes>0){
     sec.style.display='block';
-    document.getElementById('bye-notice-txt').textContent=`⚠ With ${n} players, ${byes} player${byes>1?'s':''} sit out each round.`;
+    document.getElementById('bye-notice-txt').textContent=`⚠ With ${n} players and ${courts} court${courts>1?'s':''}, ${byes} player${byes>1?'s':''} sit out each round.`;
     document.getElementById('bye-half-pts').textContent=`${Math.round(ppg/2)} pts`;
   } else sec.style.display='none';
 }
 document.getElementById('s-ppg').addEventListener('change',checkBye);
 document.getElementById('s-nplayers').addEventListener('change',checkBye);
+buildPlayerInputs();
 function selBye(o){byeChoice=o;document.getElementById('bye-half').classList.toggle('sel',o==='half');document.getElementById('bye-zero').classList.toggle('sel',o==='zero');}
 
 // ═══════════════════════════════════
 //  SCHEDULE GENERATION
 // ═══════════════════════════════════
-function generateSchedule(players,numRounds){
-  const n=players.length,courts=Math.floor(n/4),ppr=courts*4,rounds=[];let byePool=[];
+function generateSchedule(players,numRounds,numCourts){
+  const n=players.length;
+  const courts=numCourts||Math.floor(n/4);
+  const ppr=courts*4,rounds=[];let byePool=[];
   for(let r=0;r<numRounds;r++){
     const round={matches:[],byes:[]};let active;
-    if(n%4===0){active=[...players];}
+    if(n===ppr){active=[...players];}
     else{const need=n-ppr;if(byePool.length<need)byePool=[...players];const sitting=byePool.splice(0,need);round.byes=sitting;active=players.filter(p=>!sitting.includes(p));}
     const arr=[active[0],...active.slice(1).map((_,i)=>active[1+((i+r)%(active.length-1))])];
     const half=Math.floor(arr.length/2),inter=[];
     for(let i=0;i<half;i++){inter.push(arr[i]);inter.push(arr[i+half]);}
-    for(let c=0;c<courts;c++)round.matches.push({teamA:[inter[c*4],inter[c*4+1]],teamB:[inter[c*4+2],inter[c*4+3]],scoreA:null,scoreB:null,saved:false});
+    for(let c=0;c<courts;c++)round.matches.push({court:c+1,teamA:[inter[c*4],inter[c*4+1]],teamB:[inter[c*4+2],inter[c*4+3]],scoreA:null,scoreB:null,saved:false});
     rounds.push(round);
   }
   return rounds;
@@ -1628,8 +1648,9 @@ async function createTournament(){
   const players=Array.from(inputs).map((inp,i)=>inp.value.trim()||`Player ${i+1}`);
   if(players.length<4){toast('Need at least 4 players',true);return;}
   const code=Math.random().toString(36).slice(2,7).toUpperCase();
-  T={code,name,pointsPerGame:ppg,players,rounds:generateSchedule(players,numRounds),
-     byeOption:players.length%4!==0?byeChoice:null,createdAt:new Date().toISOString(),
+  const numCourts=parseInt(document.getElementById('s-courts').value)||Math.floor(players.length/4);
+  T={code,name,pointsPerGame:ppg,players,rounds:generateSchedule(players,numRounds,numCourts),numCourts,
+     byeOption:players.length>numCourts*4?byeChoice:null,createdAt:new Date().toISOString(),
      createdBy:currentUser?currentUser.username:null};
   const btn=document.querySelector('#s-setup .btn-primary');btn.textContent='Saving…';btn.disabled=true;
   const ok=await fbSaveT(T);btn.innerHTML=`<svg width="20" height="24" viewBox="0 0 100 120" fill="none" xmlns="http://www.w3.org/2000/svg" style="display:inline-block;vertical-align:middle;margin-right:6px;"><ellipse cx="50" cy="42" rx="32" ry="36" fill="currentColor" opacity="0.15" stroke="currentColor" stroke-width="6"/><circle cx="38" cy="28" r="4" fill="currentColor" opacity="0.5"/><circle cx="50" cy="28" r="4" fill="currentColor" opacity="0.5"/><circle cx="62" cy="28" r="4" fill="currentColor" opacity="0.5"/><circle cx="32" cy="40" r="4" fill="currentColor" opacity="0.5"/><circle cx="44" cy="40" r="4" fill="currentColor" opacity="0.5"/><circle cx="56" cy="40" r="4" fill="currentColor" opacity="0.5"/><circle cx="68" cy="40" r="4" fill="currentColor" opacity="0.5"/><circle cx="38" cy="52" r="4" fill="currentColor" opacity="0.5"/><circle cx="50" cy="52" r="4" fill="currentColor" opacity="0.5"/><circle cx="62" cy="52" r="4" fill="currentColor" opacity="0.5"/><path d="M 40 74 Q 50 80 60 74" stroke="currentColor" stroke-width="5" fill="none"/><rect x="44" y="78" width="12" height="28" rx="5" fill="currentColor" opacity="0.7"/><rect x="40" y="98" width="20" height="6" rx="3" fill="currentColor" opacity="0.4"/></svg>START &amp; SHARE`;btn.disabled=false;
@@ -1671,7 +1692,7 @@ function renderTopBar(){
     <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px;">
       <div>
         <div style="font-weight:700;font-size:17px;margin-bottom:2px;">${T.name}</div>
-        <div style="color:var(--muted);font-size:12px;">${T.players.length} players · ${T.pointsPerGame}pts · ${T.rounds.length} rounds</div>
+        <div style="color:var(--muted);font-size:12px;">${T.players.length} players · ${T.pointsPerGame}pts · ${T.rounds.length} rounds · ${T.numCourts||Math.floor(T.players.length/4)} court${(T.numCourts||Math.floor(T.players.length/4))>1?'s':''}</div>
       </div>
       <div style="text-align:right;display:flex;flex-direction:column;align-items:flex-end;gap:4px;">
         <div id="top-avatar-btn-tourn" onclick="toggleDropdown()" style="cursor:pointer;"></div>
@@ -1760,7 +1781,7 @@ function renderMatch(ri,mi){
   if(match.saved){
     const wA=match.scoreA>match.scoreB;
     const locked=T.status==='completed';
-    div.innerHTML=`<div class="court-lbl">Court ${mi+1}</div>
+    div.innerHTML=`<div class="court-lbl">Court ${match.court||mi+1}</div>
       <div class="teams-row">
         <div class="team" style="${wA?'color:var(--accent)':''}">${match.teamA.map(p=>`<span class="pname" onclick="onPlayerTap('${p}')">${p}</span>`).join('')}</div>
         <div style="text-align:center;flex-shrink:0;min-width:80px;"><div class="saved-score"><span style="color:${wA?'var(--accent)':'var(--muted)'}">${match.scoreA}</span><span style="color:var(--muted);font-size:22px;"> – </span><span style="color:${!wA?'var(--accent2)':'var(--muted)'}">${match.scoreB}</span></div></div>
@@ -1771,16 +1792,16 @@ function renderMatch(ri,mi){
     const hasScore=match.scoreA!==null||match.scoreB!==null;
     const isCompleted=T.status==='completed';
     if(isCompleted){
-      div.innerHTML=`<div class="court-lbl">Court ${mi+1}</div>
+      div.innerHTML=`<div class="court-lbl">Court ${match.court||mi+1}</div>
         <div class="teams-row"><div class="team">${match.teamA.map(p=>`<span class="pname" onclick="onPlayerTap('${p}')">${p}</span>`).join('')}</div><div class="vs-lbl">VS</div><div class="team">${match.teamB.map(p=>`<span class="pname" onclick="onPlayerTap('${p}')">${p}</span>`).join('')}</div></div>
         <div style="text-align:center;padding:6px 0;font-size:13px;color:var(--muted);">— not recorded —</div>`;
     } else if(!hasScore){
-      div.innerHTML=`<div class="court-lbl">Court ${mi+1}</div>
+      div.innerHTML=`<div class="court-lbl">Court ${match.court||mi+1}</div>
         <div class="teams-row"><div class="team">${match.teamA.map(p=>`<span class="pname" onclick="onPlayerTap('${p}')">${p}</span>`).join('')}</div><div class="vs-lbl">VS</div><div class="team">${match.teamB.map(p=>`<span class="pname" onclick="onPlayerTap('${p}')">${p}</span>`).join('')}</div></div>
         <button class="enter-score-btn" onclick="openScoreEntry(${ri},${mi})">+ Enter Score</button>`;
     } else {
       const sA=match.scoreA??0,sB=match.scoreB??0,tot=sA+sB,over=tot>ppg;
-      div.innerHTML=`<div class="court-lbl">Court ${mi+1}</div>
+      div.innerHTML=`<div class="court-lbl">Court ${match.court||mi+1}</div>
         <div class="teams-row"><div class="team">${match.teamA.map(p=>`<span class="pname" onclick="onPlayerTap('${p}')">${p}</span>`).join('')}</div><div class="vs-lbl">VS</div><div class="team">${match.teamB.map(p=>`<span class="pname" onclick="onPlayerTap('${p}')">${p}</span>`).join('')}</div></div>
         <div class="score-row">
           <input class="score-inp ${over?'over':''}" type="number" id="sA-${ri}-${mi}" placeholder="0" value="${sA||''}" min="0" max="${ppg}" oninput="onInput(${ri},${mi},'A')" onblur="onBlur(${ri},${mi},'A')"/>
