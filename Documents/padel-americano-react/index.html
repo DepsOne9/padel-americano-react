@@ -197,6 +197,8 @@ input[type=number]{-moz-appearance:textfield;}
 .toast.warn{background:var(--accent3);color:var(--bg);}
 
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:0.3}}
+@keyframes dotPulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:0.4;transform:scale(0.7)}}
+.logo-dot{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--accent);animation:dotPulse 2s ease infinite;vertical-align:middle;margin-left:2px;margin-bottom:2px;}
 @keyframes fadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
 .fade-up{animation:fadeUp 0.25s ease forwards;}
 .spinner{width:28px;height:28px;border:3px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin 0.8s linear infinite;margin:40px auto;}
@@ -315,13 +317,13 @@ input[type=number]{-moz-appearance:textfield;}
 <div class="screen active" id="s-home">
   <div class="top-bar" style="position:relative;">
     <div style="position:absolute;left:50%;transform:translateX(-50%);text-align:center;pointer-events:none;">
-      <div class="top-bar-logo">padel<span style="color:var(--accent);">.</span></div>
+      <div class="top-bar-logo">padel<span class="logo-dot"></span></div>
       <div style="font-size:10px;letter-spacing:3px;text-transform:uppercase;color:var(--muted);">Americano</div>
     </div>
     <div style="visibility:hidden;"><div class="avatar-btn"></div></div>
-    <div style="display:flex;align-items:center;gap:8px;cursor:pointer;" onclick="toggleDropdown()">
+    <div style="display:flex;align-items:center;gap:8px;">
       <div id="home-signin-label"></div>
-      <div id="top-avatar-btn" onclick="toggleDropdown()"></div>
+      <div id="top-avatar-btn"></div>
     </div>
   </div>
   <div class="wrap" style="padding-top:4px;">
@@ -345,7 +347,7 @@ input[type=number]{-moz-appearance:textfield;}
 <div class="screen" id="s-account">
   <div class="top-bar" style="padding-bottom:10px;position:relative;">
     <div style="position:absolute;left:50%;transform:translateX(-50%);pointer-events:none;">
-      <div class="top-bar-logo">profile<span style="color:var(--accent);">.</span></div>
+      <div class="top-bar-logo">profile<span class="logo-dot"></span></div>
     </div>
     <div style="visibility:hidden;"><div class="avatar-btn"></div></div>
     <div id="top-avatar-btn-acct" onclick="toggleDropdown()"></div>
@@ -357,7 +359,7 @@ input[type=number]{-moz-appearance:textfield;}
 <div class="screen" id="s-join">
   <div class="top-bar" style="padding-bottom:10px;position:relative;">
     <div style="position:absolute;left:50%;transform:translateX(-50%);text-align:center;pointer-events:none;">
-      <div class="top-bar-logo">join<span style="color:var(--accent);">.</span></div>
+      <div class="top-bar-logo">join<span class="logo-dot"></span></div>
       <div style="font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);">Enter tournament code</div>
     </div>
     <div style="visibility:hidden;"><div class="avatar-btn"></div></div>
@@ -380,7 +382,7 @@ input[type=number]{-moz-appearance:textfield;}
 <div class="screen" id="s-setup">
   <div class="top-bar" style="padding-bottom:10px;position:relative;">
     <div style="position:absolute;left:50%;transform:translateX(-50%);text-align:center;pointer-events:none;">
-      <div class="top-bar-logo">new<span style="color:var(--accent);">.</span></div>
+      <div class="top-bar-logo">new<span class="logo-dot"></span></div>
       <div style="font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);">Configure your session</div>
     </div>
     <div style="visibility:hidden;"><div class="avatar-btn"></div></div>
@@ -440,7 +442,7 @@ input[type=number]{-moz-appearance:textfield;}
 <div class="screen" id="s-mygames">
   <div class="top-bar" style="padding-bottom:10px;position:relative;">
     <div style="position:absolute;left:50%;transform:translateX(-50%);text-align:center;pointer-events:none;">
-      <div class="top-bar-logo">all games<span style="color:var(--accent);">.</span></div>
+      <div class="top-bar-logo">all games<span class="logo-dot"></span></div>
       <div style="font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);">Completed tournaments</div>
     </div>
     <div style="visibility:hidden;"><div class="avatar-btn"></div></div>
@@ -453,7 +455,7 @@ input[type=number]{-moz-appearance:textfield;}
 <div class="screen" id="s-leaderboard">
   <div class="top-bar" style="padding-bottom:10px;position:relative;">
     <div style="position:absolute;left:50%;transform:translateX(-50%);text-align:center;pointer-events:none;">
-      <div class="top-bar-logo">rank<span style="color:var(--accent);">.</span></div>
+      <div class="top-bar-logo">rank<span class="logo-dot"></span></div>
       <div style="font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);">Global Leaderboard</div>
     </div>
     <div style="visibility:hidden;"><div class="avatar-btn"></div></div>
@@ -707,7 +709,10 @@ function renderMyGames(){
       <div style="font-size:12px;margin-top:6px;">Finish a tournament to see it here</div></div>`;
     return;
   }
-  let html=`<div class="sec" style="margin-top:4px;">Completed (${done.length})</div>`;
+  let html=`<div style="display:flex;align-items:center;justify-content:space-between;margin-top:4px;margin-bottom:10px;">
+    <div class="sec" style="margin:0;">Completed (${done.length})</div>
+    <button onclick="cleanupTournaments()" style="background:transparent;border:1px solid var(--border);color:var(--muted);padding:5px 12px;border-radius:50px;font-size:11px;font-weight:700;cursor:pointer;letter-spacing:0.5px;">🗑 Clean up</button>
+  </div>`;
   done.forEach(t=>{html+=tournCard(t);});
   el.innerHTML=html;
 }
@@ -839,7 +844,10 @@ function renderHomeTournList(){
       <div style="font-size:12px;margin-top:6px;">Start or join one to play</div></div>`;
     return;
   }
-  let html=`<div class="sec" style="margin-top:4px;">Active (${active.length})</div>`;
+  let html=`<div style="display:flex;align-items:center;justify-content:space-between;margin-top:4px;margin-bottom:10px;">
+    <div class="sec" style="margin:0;">Active (${active.length})</div>
+    <button onclick="cleanupTournaments()" style="background:transparent;border:1px solid var(--border);color:var(--muted);padding:5px 12px;border-radius:50px;font-size:11px;font-weight:700;cursor:pointer;letter-spacing:0.5px;">🗑 Clean up</button>
+  </div>`;
   active.forEach(t=>{html+=tournCard(t);});
   el.innerHTML=html;
 }
@@ -894,7 +902,29 @@ async function syncTournamentList(){
   else toast('All tournaments up to date ✓');
 }
 
-function tournCard(t){
+async function cleanupTournaments(){
+  const confirmed=await showConfirm('Clean Up','Remove all tournaments that are no longer accessible (deleted or expired)?','Clean Up 🗑');
+  if(!confirmed)return;
+  const btn=document.querySelectorAll('[onclick="cleanupTournaments()"]');
+  btn.forEach(b=>{b.textContent='⏳ Checking…';b.disabled=true;});
+  let removed=0;
+  const checked=await Promise.all(
+    myTournaments.map(async t=>{
+      try{const data=await window._fbGet(`tournaments/${t.code}`);return data?t:null;}
+      catch(e){return t;}
+    })
+  );
+  const before=myTournaments.length;
+  myTournaments=checked.filter(Boolean);
+  removed=before-myTournaments.length;
+  saveMyTournaments();
+  renderHomeTournList();
+  renderMyGames();
+  if(removed>0)toast(`Removed ${removed} inaccessible tournament${removed>1?'s':''} ✓`);
+  else toast('Nothing to clean up ✓');
+}
+
+
   const isActive=t.status!=='completed';
   const dateStr=t.createdAt?new Date(t.createdAt).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'}):'';
   return `<div class="tlist-card" onclick="reopenTournament('${t.code}')">
@@ -1722,7 +1752,6 @@ function renderMatch(ri,mi){
       const sA=match.scoreA??0,sB=match.scoreB??0,tot=sA+sB,over=tot>ppg;
       div.innerHTML=`<div class="court-lbl">Court ${mi+1}</div>
         <div class="teams-row"><div class="team">${match.teamA.map(p=>`<span class="pname" onclick="onPlayerTap('${p}')">${p}</span>`).join('')}</div><div class="vs-lbl">VS</div><div class="team">${match.teamB.map(p=>`<span class="pname" onclick="onPlayerTap('${p}')">${p}</span>`).join('')}</div></div>
-        <div class="score-hint ${over?'over':''}" id="hint-${ri}-${mi}">${over?`⚠ Total ${tot} exceeds ${ppg} max`:`${tot} / ${ppg} pts · ${ppg-tot} left`}</div>
         <div class="score-row">
           <input class="score-inp ${over?'over':''}" type="number" id="sA-${ri}-${mi}" placeholder="0" value="${sA||''}" min="0" max="${ppg}" oninput="onInput(${ri},${mi},'A')" onblur="onBlur(${ri},${mi},'A')"/>
           <div class="score-dash">–</div>
@@ -1745,8 +1774,6 @@ function clearScoreEntry(ri,mi){T.rounds[ri].matches[mi].scoreA=null;T.rounds[ri
 // ═══════════════════════════════════
 function updateHint(ri,mi){
   const m=T.rounds[ri].matches[mi],ppg=T.pointsPerGame,sA=m.scoreA??0,sB=m.scoreB??0,tot=sA+sB,over=tot>ppg;
-  const hint=document.getElementById(`hint-${ri}-${mi}`);
-  if(hint){hint.className=`score-hint${over?' over':''}`;hint.textContent=over?`⚠ Total ${tot} exceeds ${ppg} max`:`${tot} / ${ppg} pts · ${ppg-tot} left`;}
   [document.getElementById(`sA-${ri}-${mi}`),document.getElementById(`sB-${ri}-${mi}`)].forEach(el=>{if(el)el.classList.toggle('over',over);});
 }
 function onInput(ri,mi,team){
@@ -1883,9 +1910,8 @@ function computeStandings(){
   const totalM=T.rounds.reduce((a,r)=>a+r.matches.length,0);
   const savedM=T.rounds.reduce((a,r)=>a+r.matches.filter(m=>m.saved).length,0);
   if(savedM===totalM&&totalM>0&&T.byeOption==='half'){
-    const maxP=Math.max(...Object.values(st).map(s=>s.played));
     const bp=Math.round(T.pointsPerGame/2);
-    T.players.forEach(p=>{const s=maxP-st[p].played;if(s>0){st[p].byePts=s*bp;st[p].points+=st[p].byePts;}});
+    T.players.forEach(p=>{const s=T.rounds.length-st[p].played;if(s>0){st[p].byePts=s*bp;st[p].points+=st[p].byePts;}});
   }
   return Object.entries(st).map(([name,s])=>({name,...s})).sort((a,b)=>b.points-a.points||b.wins-a.wins);
 }
