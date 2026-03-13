@@ -168,6 +168,7 @@ input[type=number]{-moz-appearance:textfield;}
 .ws-name{font-size:13px;font-weight:600;flex:1;}
 .ws-bar{flex:2;display:flex;align-items:center;gap:3px;}
 .ws-w{height:8px;background:var(--accent);border-radius:4px 0 0 4px;}
+.ws-d{height:8px;background:var(--accent3);}
 .ws-l{height:8px;background:var(--accent2);border-radius:0 4px 4px 0;}
 .ws-ratio{font-size:12px;font-weight:700;color:var(--muted);min-width:40px;text-align:right;}
 .lb-footer{padding:14px 16px;display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;}
@@ -1634,7 +1635,7 @@ function renderRounds(){
     div.style.cssText='margin:10px 16px 0;background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:14px;';
     let byeHTML='';
     if(round.byes&&round.byes.length)
-      byeHTML=`<div style="background:rgba(255,209,102,0.08);border:1px solid rgba(255,209,102,0.2);border-radius:8px;padding:8px 12px;margin-bottom:8px;font-size:12px;color:var(--accent3);">🪑 Sitting out: <strong>${round.byes.join(', ')}</strong> · +${byePts} pts</div>`;
+      byeHTML=`<div style="background:rgba(255,209,102,0.08);border:1px solid rgba(255,209,102,0.2);border-radius:8px;padding:8px 12px;margin-bottom:8px;font-size:12px;color:var(--accent3);">🪑 Sitting out: <strong>${round.byes.join(', ')}</strong></div>`;
     div.innerHTML=`<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
       <div style="font-weight:700;font-size:16px;">Round ${ri+1}</div>
       <div class="round-badge">${allSaved?'✓ Complete':`${round.matches.length} Court${round.matches.length>1?'s':''}`}</div>
@@ -1819,7 +1820,7 @@ async function commitTournamentToProfiles(){
 // ═══════════════════════════════════
 function computeStandings(){
   const st={};
-  T.players.forEach(p=>st[p]={points:0,wins:0,losses:0,played:0,byePts:0,roundScores:[]});
+  T.players.forEach(p=>st[p]={points:0,wins:0,losses:0,draws:0,played:0,byePts:0,roundScores:[]});
   T.rounds.forEach(round=>{
     round.matches.forEach(m=>{
       if(!m.saved)return;
@@ -1827,6 +1828,7 @@ function computeStandings(){
       m.teamB.forEach(p=>{st[p].points+=m.scoreB;st[p].played++;st[p].roundScores.push(m.scoreB);});
       if(m.scoreA>m.scoreB){m.teamA.forEach(p=>st[p].wins++);m.teamB.forEach(p=>st[p].losses++);}
       else if(m.scoreB>m.scoreA){m.teamB.forEach(p=>st[p].wins++);m.teamA.forEach(p=>st[p].losses++);}
+      else{m.teamA.forEach(p=>st[p].draws++);m.teamB.forEach(p=>st[p].draws++);}
     });
     if(round.byes)round.byes.forEach(p=>{if(st[p])st[p].roundScores.push(0);});
   });
@@ -1834,7 +1836,8 @@ function computeStandings(){
   const savedM=T.rounds.reduce((a,r)=>a+r.matches.filter(m=>m.saved).length,0);
   if(savedM===totalM&&totalM>0&&T.byeOption==='half'){
     const bp=Math.round(T.pointsPerGame/2);
-    T.players.forEach(p=>{const s=T.rounds.length-st[p].played;if(s>0){st[p].byePts=s*bp;st[p].points+=st[p].byePts;}});
+    const maxPlayed=Math.max(...Object.values(st).map(s=>s.played));
+    T.players.forEach(p=>{const s=maxPlayed-st[p].played;if(s>0){st[p].byePts=s*bp;st[p].points+=st[p].byePts;}});
   }
   return Object.entries(st).map(([name,s])=>({name,...s})).sort((a,b)=>b.points-a.points||b.wins-a.wins);
 }
@@ -1877,7 +1880,7 @@ function renderRanking(){
     if(!p)return;
     const pc=cls[i];
     const medals={'p1':'🥇','p2':'🥈','p3':'🥉'};
-    const val=lbTab==='points'?p.points:lbTab==='winrate'?`${p.played?Math.round(p.wins/(p.wins+p.losses||1)*100):0}%`:`${p.played?(p.points/p.played).toFixed(1):0}`;
+    const val=lbTab==='points'?p.points:lbTab==='winrate'?`${p.played?Math.round(p.wins/(p.wins+p.losses+p.draws||1)*100):0}%`:`${p.played?(p.points/p.played).toFixed(1):0}`;
     const lbl=lbTab==='points'?'pts':lbTab==='winrate'?'win rate':'avg';
     html+=`<div class="pod ${pc}" onclick="onPlayerTap('${p.name}')">
       ${pc==='p1'?`<div style="font-size:20px;margin-bottom:4px;">${medals[pc]}</div>`:''}
@@ -1891,7 +1894,7 @@ function renderRanking(){
   html+=`</div>`;
   html+=`<div class="lb-section"><div class="lb-section-title">${lbTab==='points'?'Points per Player':lbTab==='winrate'?'Win Rate':'Avg Points / Match'}</div>`;
   standings.forEach((p,i)=>{
-    const raw=lbTab==='points'?p.points:lbTab==='winrate'?(p.played?Math.round(p.wins/(p.wins+p.losses||1)*100):0):(p.played?(p.points/p.played):0);
+    const raw=lbTab==='points'?p.points:lbTab==='winrate'?(p.played?Math.round(p.wins/(p.wins+p.losses+p.draws||1)*100):0):(p.played?(p.points/p.played):0);
     const maxVal=lbTab==='points'?maxPts:lbTab==='winrate'?100:Math.max(...standings.map(s=>s.played?(s.points/s.played):0))||1;
     const pct=maxVal>0?Math.round(raw/maxVal*100):0;
     const disp=lbTab==='winrate'?`${raw}%`:lbTab==='avg'?Number(raw).toFixed(1):raw;
@@ -1903,10 +1906,22 @@ function renderRanking(){
   });
   html+=`</div>`;
   if(lbTab==='points'){
-    html+=`<div class="lb-section"><div class="lb-section-title">Win / Loss</div>`;
+    html+=`<div class="lb-section"><div class="lb-section-title">Win / Loss / Draw</div>`;
     standings.slice(0,5).forEach(p=>{
-      const total=p.wins+p.losses||1,wPct=Math.round(p.wins/total*100),lPct=100-wPct;
-      html+=`<div class="win-strip" onclick="onPlayerTap('${p.name}')"><div class="ws-name">${p.name}</div><div class="ws-bar"><div class="ws-w" style="width:${wPct}%;"></div><div class="ws-l" style="width:${lPct}%;"></div></div><div class="ws-ratio">${p.wins}W · ${p.losses}L</div></div>`;
+      const total=p.wins+p.losses+p.draws||1;
+      const wPct=Math.round(p.wins/total*100);
+      const dPct=Math.round(p.draws/total*100);
+      const lPct=100-wPct-dPct;
+      const drawStr=p.draws>0?` · <span style="color:var(--accent3)">${p.draws}D</span>`:'';
+      html+=`<div class="win-strip" onclick="onPlayerTap('${p.name}')">
+        <div class="ws-name">${p.name}</div>
+        <div class="ws-bar">
+          <div class="ws-w" style="width:${wPct}%;"></div>
+          ${p.draws>0?`<div class="ws-d" style="width:${dPct}%;"></div>`:''}
+          <div class="ws-l" style="width:${lPct}%;"></div>
+        </div>
+        <div class="ws-ratio">${p.wins}W${drawStr} · ${p.losses}L</div>
+      </div>`;
     });
     html+=`</div>`;
   }
@@ -1915,9 +1930,9 @@ function renderRanking(){
     <div class="lb-footer-cell"><span class="fv">${T.pointsPerGame}</span><span class="fl">Pts/Game</span></div>
     <div class="lb-footer-cell"><span class="fv">${T.players.length}</span><span class="fl">Players</span></div>
   </div>`;
-  if(T.byeOption){
+  if(T.byeOption==='half'){
     const bp=Math.round(T.pointsPerGame/2);
-    html+=`<div style="font-size:12px;color:var(--muted);text-align:center;padding:0 16px 16px;">${allDone?`✓ Bye bonus applied (+${bp}pts/missed round)`:`⏳ Bye bonus (+${bp}pts) added when all matches saved`}</div>`;
+    html+=`<div style="font-size:12px;color:var(--muted);text-align:center;padding:0 16px 16px;">${allDone?`✓ Bye bonus applied (+${bp}pts/missed match)`:`⏳ Bye bonus (+${bp}pts) added when all matches saved`}</div>`;
   }
   pane.innerHTML=html;
 }
