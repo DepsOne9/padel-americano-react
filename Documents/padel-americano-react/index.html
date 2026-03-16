@@ -1248,6 +1248,7 @@ async function doGoogleSignOut(){
 
 // ── GENDER PROMPT ──
 let _genderPromptSelection='prefer_not_to_say';
+let _genderEditSelection='prefer_not_to_say';
 function showGenderPrompt(){
   _genderPromptSelection='prefer_not_to_say';
   ['male','female','pnts'].forEach(k=>{
@@ -1268,6 +1269,36 @@ async function saveGenderFromPrompt(){
   const updated={...currentUser,gender:_genderPromptSelection};
   await fbSaveP(updated);
   renderAcctMe();
+}
+// Profile inline gender edit
+function showGenderEdit(){
+  _genderEditSelection=currentUser?.gender||'prefer_not_to_say';
+  document.getElementById('gender-edit').style.display='block';
+  // Sync pill highlights
+  ['prefer_not_to_say','male','female'].forEach(v=>{
+    const btns=document.querySelectorAll('#gender-edit .gender-pill');
+    btns.forEach(b=>{
+      if(b.getAttribute('onclick')===`pickGender('${v}')`)b.classList.toggle('sel',_genderEditSelection===v);
+    });
+  });
+}
+function pickGender(val){
+  _genderEditSelection=val;
+  document.querySelectorAll('#gender-edit .gender-pill').forEach(b=>{
+    const m=b.getAttribute('onclick')?.match(/pickGender\('(.+)'\)/);
+    if(m)b.classList.toggle('sel',m[1]===val);
+  });
+}
+async function doSaveGender(){
+  document.getElementById('gender-edit').style.display='none';
+  if(!currentUser)return;
+  const updated={...currentUser,gender:_genderEditSelection};
+  const ok=await fbSaveP(updated);
+  if(ok){
+    const disp=document.getElementById('gender-display-val');
+    if(disp)disp.textContent=_genderEditSelection==='male'?'♂ Male':_genderEditSelection==='female'?'♀ Female':'— Prefer not to say';
+    toast('Gender updated ✓');
+  }
 }
 async function saveGender(val){
   if(!currentUser)return;
@@ -1358,11 +1389,23 @@ function renderAcctMe(){
     </div>
     <!-- Gender selector -->
     <div style="padding:0 16px 12px;">
-      <div style="font-size:9px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-bottom:8px;">Gender</div>
-      <div class="row">
-        <button class="gender-pill ${(!u.gender||u.gender==='prefer_not_to_say')?'':'sel'}" id="g-pnts" onclick="saveGender('prefer_not_to_say')" style="${(!u.gender||u.gender==='prefer_not_to_say')?'border-color:var(--accent);color:var(--accent);background:rgba(0,229,160,0.08);':''}">— Prefer not</button>
-        <button class="gender-pill" id="g-male" onclick="saveGender('male')" style="${u.gender==='male'?'border-color:var(--accent);color:var(--accent);background:rgba(0,229,160,0.08);':''}">♂ Male</button>
-        <button class="gender-pill" id="g-female" onclick="saveGender('female')" style="${u.gender==='female'?'border-color:var(--accent);color:var(--accent);background:rgba(0,229,160,0.08);':''}">♀ Female</button>
+      <div style="display:flex;align-items:center;gap:10px;background:rgba(0,229,160,0.05);border:1px solid rgba(0,229,160,0.15);border-radius:10px;padding:9px 12px;">
+        <div style="flex:1;min-width:0;">
+          <div style="font-size:9px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--accent);margin-bottom:2px;">Gender</div>
+          <div id="gender-display-val" style="font-size:14px;font-weight:700;">${u.gender==='male'?'♂ Male':u.gender==='female'?'♀ Female':'— Prefer not to say'}</div>
+        </div>
+        <button onclick="showGenderEdit()" style="background:transparent;border:1px solid var(--border);color:var(--muted);padding:5px 12px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;flex-shrink:0;">✏️ Edit</button>
+      </div>
+      <div id="gender-edit" style="display:none;margin-top:8px;background:var(--card);border:1px solid var(--border);border-radius:10px;padding:10px 12px;">
+        <div class="row" style="margin-bottom:10px;">
+          <button class="gender-pill ${(!u.gender||u.gender==='prefer_not_to_say')?'sel':''}" onclick="pickGender('prefer_not_to_say')">— Prefer not</button>
+          <button class="gender-pill ${u.gender==='male'?'sel':''}" onclick="pickGender('male')">♂ Male</button>
+          <button class="gender-pill ${u.gender==='female'?'sel':''}" onclick="pickGender('female')">♀ Female</button>
+        </div>
+        <div style="display:flex;gap:8px;">
+          <button class="btn btn-primary btn-sm" style="flex:1;" onclick="doSaveGender()">Save</button>
+          <button class="btn btn-secondary btn-sm" style="flex:1;" onclick="document.getElementById('gender-edit').style.display='none'">Cancel</button>
+        </div>
       </div>
     </div>
     <div id="acct-profile-stats"><div style="padding:16px;text-align:center;"><div class="spinner" style="margin:20px auto;"></div></div></div>`;
@@ -1399,16 +1442,19 @@ async function loadAcctProfileStats(){
       const rankStr=th.rank?`#${th.rank} of ${th.totalPlayers||'?'}`:'?';
       const rankColor=th.rank===1?'var(--accent3)':th.rank===2?'#aaa':th.rank===3?'#cd7f32':'var(--muted)';
       const rankMedal=th.rank===1?'🥇':th.rank===2?'🥈':th.rank===3?'🥉':'';
+      const isFixedTeamHist=th.tournMode==='teams'&&th.teamsMode==='fixed';
+      const teamLineHist=isFixedTeamHist&&th.teamName?`<div style="font-size:11px;color:#00b4d8;margin-top:1px;">👥 Team: ${th.teamName}</div>`:'';
       histHTML+=`
         <div class="card" style="margin-bottom:10px;">
           <div style="display:flex;align-items:center;gap:10px;cursor:pointer;" onclick="toggleHistEntry(${idx})">
             <div style="flex:1;min-width:0;">
               <div style="font-weight:700;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${th.name||'Tournament'}</div>
               <div style="font-size:11px;color:var(--muted);margin-top:2px;">${fmtDate(th.date)} · ${th.ppg||24}pts/game</div>
+              ${teamLineHist}
             </div>
             <div style="text-align:right;flex-shrink:0;">
               <div style="font-weight:800;letter-spacing:-0.5px;font-size:26px;color:var(--accent);line-height:1;">${th.points}</div>
-              <div style="font-size:10px;color:var(--muted);">pts</div>
+              <div style="font-size:10px;color:var(--muted);">${isFixedTeamHist?'team pts':'pts'}</div>
             </div>
             <div style="font-size:18px;flex-shrink:0;color:var(--muted);transition:transform 0.2s;" id="hist-chevron-${idx}">›</div>
           </div>
@@ -2225,9 +2271,9 @@ async function deleteTournament(){
 // ═══════════════════════════════════
 async function commitTournamentToProfiles(){
   if(!navigator.onLine) return;
-  // Private tournaments don't commit to profiles/leaderboards
   if(T.ranked===false) return;
-  const standings=computeStandings();
+
+  const isFixedTeams=T.tournMode==='teams'&&T.teamsMode==='fixed';
   let linked=0, skipped=0;
 
   let allPlayers={};
@@ -2236,7 +2282,6 @@ async function commitTournamentToProfiles(){
     if(data) allPlayers=data;
   }catch(e){return;}
 
-  // Build lookup maps: displayName→{uid,profile}, username→{uid,profile}
   const byDisplayName={}, byUsername={};
   Object.entries(allPlayers).forEach(([uid,p])=>{
     if(!p.username) return;
@@ -2245,38 +2290,105 @@ async function commitTournamentToProfiles(){
     byDisplayName[dn]={uid,p};
   });
 
-  for(const st of standings){
-    const nameNorm=st.name.toLowerCase().trim();
-    const usernameGuess=nameNorm.replace(/\s+/g,'_');
-    const match = byDisplayName[nameNorm] || byUsername[usernameGuess];
-    if(!match){skipped++;continue;}
-
-    const {uid, p:player} = match;
-    const existing=player.tournaments||[];
-    if(existing.some(t=>t.code===T.code)) continue;
-
-    const entry={
-      code:T.code, name:T.name,
-      date:T.completedAt||new Date().toISOString(),
-      points:st.points, wins:st.wins, losses:st.losses, played:st.played,
-      rank:standings.indexOf(st)+1, totalPlayers:standings.length,
-      roundScores:st.roundScores||[], ppg:T.pointsPerGame
-    };
-    const updated=[...existing,entry];
-    if(updated.length>10) updated.splice(0,updated.length-10);
-    const savedPlayer={...player,tournaments:updated};
-    await window._fbSet(`players/${uid}`, savedPlayer);
-    if(currentUser&&currentUser.uid===uid) currentUser=savedPlayer;
-    linked++;
+  if(isFixedTeams){
+    // For fixed-pairs: commit team-level stats; each player in the team gets the team entry
+    const teamStandings=computeTeamStandings();
+    for(const teamSt of teamStandings){
+      for(const playerName of teamSt.players){
+        const nameNorm=playerName.toLowerCase().trim();
+        const usernameGuess=nameNorm.replace(/\s+/g,'_');
+        const match=byDisplayName[nameNorm]||byUsername[usernameGuess];
+        if(!match){skipped++;continue;}
+        const {uid,p:player}=match;
+        const existing=player.tournaments||[];
+        if(existing.some(t=>t.code===T.code)) continue;
+        const entry={
+          code:T.code, name:T.name,
+          date:T.completedAt||new Date().toISOString(),
+          points:teamSt.points, wins:teamSt.wins, losses:teamSt.losses,
+          draws:teamSt.draws||0, played:teamSt.played,
+          rank:teamStandings.indexOf(teamSt)+1, totalPlayers:teamStandings.length,
+          teamName:teamSt.name, roundScores:teamSt.roundScores||[],
+          ppg:T.pointsPerGame, tournMode:'teams', teamsMode:'fixed'
+        };
+        const updated=[...existing,entry];
+        if(updated.length>10) updated.splice(0,updated.length-10);
+        const savedPlayer={...player,tournaments:updated};
+        await window._fbSet(`players/${uid}`,savedPlayer);
+        if(currentUser&&currentUser.uid===uid) currentUser=savedPlayer;
+        linked++;
+      }
+    }
+  } else {
+    // Individual or rotation: commit per-player stats
+    const standings=computeStandings();
+    for(const st of standings){
+      const nameNorm=st.name.toLowerCase().trim();
+      const usernameGuess=nameNorm.replace(/\s+/g,'_');
+      const match=byDisplayName[nameNorm]||byUsername[usernameGuess];
+      if(!match){skipped++;continue;}
+      const {uid,p:player}=match;
+      const existing=player.tournaments||[];
+      if(existing.some(t=>t.code===T.code)) continue;
+      const entry={
+        code:T.code, name:T.name,
+        date:T.completedAt||new Date().toISOString(),
+        points:st.points, wins:st.wins, losses:st.losses,
+        draws:st.draws||0, played:st.played,
+        rank:standings.indexOf(st)+1, totalPlayers:standings.length,
+        roundScores:st.roundScores||[], ppg:T.pointsPerGame,
+        tournMode:T.tournMode||'individual', teamsMode:T.teamsMode||null
+      };
+      const updated=[...existing,entry];
+      if(updated.length>10) updated.splice(0,updated.length-10);
+      const savedPlayer={...player,tournaments:updated};
+      await window._fbSet(`players/${uid}`,savedPlayer);
+      if(currentUser&&currentUser.uid===uid) currentUser=savedPlayer;
+      linked++;
+    }
   }
 
   if(linked>0) toast(`Linked results to ${linked} player account${linked>1?'s':''}! 🔗`);
-  if(skipped>0 && linked===0) toast(`${skipped} players have no linked account`);
+  if(skipped>0&&linked===0) toast(`${skipped} players have no linked account`);
 }
 
 // ═══════════════════════════════════
 //  STANDINGS
 // ═══════════════════════════════════
+
+// Returns team-level standings for Fixed Pairs mode
+function computeTeamStandings(){
+  const st={};
+  (T.teams||[]).forEach(team=>{
+    const key=team.players.join(' – ');
+    st[key]={name:key,teamName:team.name,color:team.color,players:team.players,points:0,wins:0,losses:0,draws:0,played:0,byePts:0,roundScores:[]};
+  });
+  T.rounds.forEach(round=>{
+    round.matches.forEach(m=>{
+      if(!m.saved)return;
+      const keyA=(m.teamA||[]).join(' – ');
+      const keyB=(m.teamB||[]).join(' – ');
+      if(st[keyA]){st[keyA].points+=m.scoreA;st[keyA].played++;st[keyA].roundScores.push(m.scoreA);}
+      if(st[keyB]){st[keyB].points+=m.scoreB;st[keyB].played++;st[keyB].roundScores.push(m.scoreB);}
+      if(m.scoreA>m.scoreB){if(st[keyA])st[keyA].wins++;if(st[keyB])st[keyB].losses++;}
+      else if(m.scoreB>m.scoreA){if(st[keyB])st[keyB].wins++;if(st[keyA])st[keyA].losses++;}
+      else{if(st[keyA])st[keyA].draws++;if(st[keyB])st[keyB].draws++;}
+    });
+    if(round.teamByes)round.teamByes.forEach(tn=>{
+      const team=(T.teams||[]).find(t=>t.name===tn);
+      if(team){const key=team.players.join(' – ');if(st[key])st[key].roundScores.push(0);}
+    });
+  });
+  const totalM=T.rounds.reduce((a,r)=>a+r.matches.length,0);
+  const savedM=T.rounds.reduce((a,r)=>a+r.matches.filter(m=>m.saved).length,0);
+  if(savedM===totalM&&totalM>0&&T.byeOption==='half'){
+    const bp=Math.round(T.pointsPerGame/2);
+    const maxPlayed=Math.max(...Object.values(st).map(s=>s.played));
+    Object.values(st).forEach(s=>{const d=maxPlayed-s.played;if(d>0){s.byePts=d*bp;s.points+=s.byePts;}});
+  }
+  return Object.values(st).sort((a,b)=>b.points-a.points||b.wins-a.wins);
+}
+
 function computeStandings(){
   const st={};
   T.players.forEach(p=>st[p]={points:0,wins:0,losses:0,draws:0,played:0,byePts:0,roundScores:[]});
@@ -2305,6 +2417,78 @@ function computeStandings(){
 //  RANKING
 // ═══════════════════════════════════
 function renderRanking(){
+  if(T.tournMode==='teams'&&T.teamsMode==='fixed') renderTeamRanking();
+  else renderIndividualRanking();
+}
+
+function renderTeamRanking(){
+  const pane=document.getElementById('pane-ranking');
+  const standings=computeTeamStandings();
+  const maxPts=standings.length&&standings[0].points>0?standings[0].points:1;
+  const totalM=T.rounds.reduce((a,r)=>a+r.matches.length,0);
+  const savedM=T.rounds.reduce((a,r)=>a+r.matches.filter(m=>m.saved).length,0);
+  const allDone=savedM===totalM&&totalM>0;
+  if(standings.every(s=>s.played===0)){pane.innerHTML=`<div class="empty"><div class="ei">🏆</div>Play some matches to see the ranking!</div>`;return;}
+
+  const top=standings.slice(0,Math.min(3,standings.length));
+  const order=top.length>=3?[top[1],top[0],top[2]]:top.length===2?[top[1],top[0]]:[top[0]];
+  const cls=top.length>=3?['p2','p1','p3']:top.length===2?['p2','p1']:['p1'];
+  let html=`<div class="podium-wrap">`;
+  order.forEach((t,i)=>{
+    if(!t)return;
+    const pc=cls[i];
+    const medals={'p1':'🥇','p2':'🥈','p3':'🥉'};
+    html+=`<div class="pod ${pc}">
+      ${pc==='p1'?`<div style="font-size:20px;margin-bottom:4px;">${medals[pc]}</div>`:''}
+      <div class="pod-avatar" style="background:${t.color||'var(--accent)'}20;border-color:${t.color||'var(--accent)'};">${t.name[0].toUpperCase()}</div>
+      <div class="pod-name" style="font-size:10px;">${t.name}</div>
+      <div class="pod-pts">${t.points}</div>
+      <div class="pod-lbl">pts</div>
+      <div class="pod-block"></div>
+    </div>`;
+  });
+  html+=`</div>`;
+  html+=`<div class="lb-section"><div class="lb-section-title">Points per Team</div>`;
+  standings.forEach((t,i)=>{
+    const pct=maxPts>0?Math.round(t.points/maxPts*100):0;
+    html+=`<div class="bar-row">
+      <div class="bar-name" style="max-width:90px;font-size:11px;">${t.name}</div>
+      <div class="bar-track"><div class="bar-fill" style="width:${pct}%;background:${i<3?'var(--accent)':'var(--muted)'}"><span>${t.points}</span></div></div>
+      <div class="bar-total">${t.points}</div>
+    </div>`;
+  });
+  html+=`</div>`;
+  html+=`<div class="lb-section"><div class="lb-section-title">Win / Loss / Draw</div>`;
+  standings.forEach(t=>{
+    const total=t.wins+t.losses+t.draws||1;
+    const wPct=Math.round(t.wins/total*100);
+    const dPct=Math.round(t.draws/total*100);
+    const lPct=100-wPct-dPct;
+    const drawStr=t.draws>0?` · ${t.draws}D`:'';
+    html+=`<div class="win-strip">
+      <div class="ws-name" style="font-size:11px;max-width:80px;">${t.name}</div>
+      <div class="ws-bar">
+        <div class="ws-w" style="width:${wPct}%;"></div>
+        ${t.draws>0?`<div class="ws-d" style="width:${dPct}%;"></div>`:''}
+        <div class="ws-l" style="width:${lPct}%;"></div>
+      </div>
+      <div class="ws-ratio">${t.wins}W${drawStr} · ${t.losses}L</div>
+    </div>`;
+  });
+  html+=`</div>`;
+  html+=`<div class="lb-footer">
+    <div class="lb-footer-cell"><span class="fv">${T.rounds.length}</span><span class="fl">Rounds</span></div>
+    <div class="lb-footer-cell"><span class="fv">${T.pointsPerGame}</span><span class="fl">Pts/Game</span></div>
+    <div class="lb-footer-cell"><span class="fv">${(T.teams||[]).length}</span><span class="fl">Teams</span></div>
+  </div>`;
+  if(T.byeOption==='half'){
+    const bp=Math.round(T.pointsPerGame/2);
+    html+=`<div style="font-size:12px;color:var(--muted);text-align:center;padding:0 16px 16px;">${allDone?`✓ Bye bonus applied (+${bp}pts/missed match)`:`⏳ Bye bonus (+${bp}pts) added when all matches saved`}</div>`;
+  }
+  pane.innerHTML=html;
+}
+
+function renderIndividualRanking(){
   const pane=document.getElementById('pane-ranking');
   const standings=computeStandings();
   const maxPts=standings.length&&standings[0].points>0?standings[0].points:1;
@@ -2313,7 +2497,6 @@ function renderRanking(){
   const allDone=savedM===totalM&&totalM>0;
   if(standings.every(s=>s.played===0)){pane.innerHTML=`<div class="empty"><div class="ei">🏆</div>Play some matches to see the ranking!</div>`;return;}
 
-  // Link account banner — show to logged-in users whose display name might not be in tournament
   let linkBanner='';
   if(currentUser&&T.players){
     const dn=(currentUser.displayName||currentUser.username).toLowerCase().trim();
@@ -2460,6 +2643,40 @@ function showTournamentProfile(playerName){
 // ═══════════════════════════════════
 function renderPartners(){
   const pane=document.getElementById('pane-partners');
+  // Fixed-pairs: show opponents faced per team, not partner rotation
+  if(T.tournMode==='teams'&&T.teamsMode==='fixed'){
+    const teams=T.teams||[];
+    const faced={},scheduled={};
+    teams.forEach(t=>{const k=t.players.join(' – ');faced[k]=new Set();scheduled[k]=new Set();});
+    T.rounds.forEach(round=>{
+      round.matches.forEach(m=>{
+        const kA=(m.teamA||[]).join(' – ');
+        const kB=(m.teamB||[]).join(' – ');
+        if(scheduled[kA])scheduled[kA].add(kB);
+        if(scheduled[kB])scheduled[kB].add(kA);
+        if(m.saved){
+          if(faced[kA])faced[kA].add(kB);
+          if(faced[kB])faced[kB].add(kA);
+        }
+      });
+    });
+    pane.innerHTML=`<div class="sec">Match History by Team</div>`;
+    teams.forEach(team=>{
+      const k=team.players.join(' – ');
+      const playedAgainst=Array.from(faced[k]||[]);
+      const upcomingAgainst=Array.from(scheduled[k]||[]).filter(x=>!playedAgainst.includes(x));
+      pane.innerHTML+=`<div class="card fade-up">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+          <div style="width:10px;height:10px;border-radius:50%;background:${team.color};flex-shrink:0;"></div>
+          <div style="font-weight:700;font-size:15px;">${k}</div>
+        </div>
+        ${playedAgainst.length?`<div style="font-size:11px;color:var(--muted);letter-spacing:1px;text-transform:uppercase;margin-bottom:4px;">Played against</div><div class="tags-wrap">${playedAgainst.map(q=>`<span class="ptag">✓ ${q}</span>`).join('')}</div>`:'<div style="color:var(--muted);font-size:13px;">No matches yet</div>'}
+        ${upcomingAgainst.length?`<div style="font-size:11px;color:var(--muted);letter-spacing:1px;text-transform:uppercase;margin:8px 0 4px;">Upcoming against</div><div class="tags-wrap">${upcomingAgainst.map(q=>`<span class="ptag-sched">${q}</span>`).join('')}</div>`:''}
+      </div>`;
+    });
+    return;
+  }
+  // Individual / rotation: original partner logic
   const partners={},upcoming={};
   T.players.forEach(p=>{partners[p]=new Set();upcoming[p]=new Set();});
   T.rounds.forEach(round=>{
