@@ -178,14 +178,14 @@ input[type=number]{-moz-appearance:textfield;}
 .bar-fill{height:100%;border-radius:5px;display:flex;align-items:center;padding:0 8px;}
 .bar-fill span{font-weight:800;letter-spacing:-0.5px;font-size:14px;color:var(--bg);}
 .bar-total{font-weight:800;letter-spacing:-0.5px;font-size:18px;color:var(--text);min-width:36px;text-align:right;}
-.win-strip{display:flex;align-items:center;gap:10px;padding:9px 12px;background:var(--surface);border-radius:10px;margin-bottom:7px;cursor:pointer;}
+.win-strip{display:flex;align-items:center;gap:8px;padding:9px 12px;background:var(--surface);border-radius:10px;margin-bottom:7px;}
 .win-strip:active{opacity:0.75;}
-.ws-name{font-size:13px;font-weight:600;flex:1;}
-.ws-bar{flex:2;display:flex;align-items:center;height:8px;border-radius:4px;overflow:hidden;background:var(--border);}
+.ws-name{font-size:12px;font-weight:600;width:110px;flex-shrink:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.ws-bar{flex:1;display:flex;align-items:center;height:8px;border-radius:4px;overflow:hidden;background:var(--border);}
 .ws-w{height:100%;background:var(--accent);flex-shrink:0;}
 .ws-d{height:100%;background:var(--muted);flex-shrink:0;}
 .ws-l{height:100%;background:var(--accent2);flex-shrink:0;}
-.ws-ratio{font-size:12px;font-weight:700;color:var(--muted);min-width:40px;text-align:right;}
+.ws-ratio{font-size:11px;font-weight:700;color:var(--muted);width:72px;flex-shrink:0;text-align:right;}
 .lb-footer{padding:14px 16px;display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;}
 .lb-footer-cell{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:10px 8px;text-align:center;}
 .lb-footer-cell .fv{font-weight:800;letter-spacing:-0.5px;font-size:26px;color:var(--accent);display:block;line-height:1;}
@@ -2093,6 +2093,23 @@ function renderRounds(){
   const sp=document.createElement('div');sp.style.height='10px';pane.appendChild(sp);
 }
 
+// Returns true if the current user is allowed to enter/edit scores in this tournament.
+// Allowed: creator, or any registered user whose display name / username matches a player in T.players.
+// Anonymous users (not signed in) are view-only.
+function canEditScores(){
+  if(!T||T.status==='completed')return false;
+  if(!currentUser)return false;
+  // Creator always can
+  if(T.createdBy&&currentUser.username===T.createdBy)return true;
+  // Check if their display name or username appears in the player list
+  const dn=(currentUser.displayName||currentUser.username).toLowerCase().trim();
+  const un=(currentUser.username||'').toLowerCase();
+  return T.players.some(p=>{
+    const pl=p.toLowerCase().trim();
+    return pl===dn||pl.replace(/\s+/g,'_')===un||pl===un;
+  });
+}
+
 function renderMatch(ri,mi){
   const container=document.getElementById(`matches-${ri}`);if(!container)return;
   const old=document.getElementById(`match-${ri}-${mi}`);if(old)old.remove();
@@ -2103,21 +2120,23 @@ function renderMatch(ri,mi){
   const teamBLabel=isFixedTeams&&match.teamBName?`<div style="font-size:11px;font-weight:700;letter-spacing:1px;color:${match.teamBColor||'var(--accent3)'};">${match.teamBName}</div>`:'';
   if(match.saved){
     const wA=match.scoreA>match.scoreB;
-    const locked=T.status==='completed';
+    const locked=T.status==='completed'||!canEditScores();
     div.innerHTML=`<div class="court-lbl">Court ${match.court||mi+1}</div>
       <div class="teams-row">
         <div class="team" style="${wA?'color:var(--accent)':''}">${teamALabel}${match.teamA.map(p=>pnameEl(p)).join('')}</div>
         <div style="text-align:center;flex-shrink:0;min-width:80px;"><div class="saved-score"><span style="color:${wA?'var(--accent)':'var(--muted)'}">${match.scoreA}</span><span style="color:var(--muted);font-size:22px;"> – </span><span style="color:${!wA?'var(--accent2)':'var(--muted)'}">${match.scoreB}</span></div></div>
         <div class="team" style="${!wA?'color:var(--accent2)':''}">${teamBLabel}${match.teamB.map(p=>pnameEl(p)).join('')}</div>
       </div>
-      ${locked?'<div style="font-size:11px;color:var(--muted);text-align:center;margin-top:4px;">🔒 Locked</div>':`<button class="edit-btn" onclick="editScore(${ri},${mi})">Edit score</button>`}`;
+      ${locked?'':`<button class="edit-btn" onclick="editScore(${ri},${mi})">Edit score</button>`}`;
   } else {
     const hasScore=match.scoreA!==null||match.scoreB!==null;
     const isCompleted=T.status==='completed';
-    if(isCompleted){
+    const editable=canEditScores();
+    if(isCompleted||!editable){
+      // View-only: show teams and score state but no inputs
       div.innerHTML=`<div class="court-lbl">Court ${match.court||mi+1}</div>
         <div class="teams-row"><div class="team">${teamALabel}${match.teamA.map(p=>pnameEl(p)).join('')}</div><div class="vs-lbl">VS</div><div class="team">${teamBLabel}${match.teamB.map(p=>pnameEl(p)).join('')}</div></div>
-        <div style="text-align:center;padding:6px 0;font-size:13px;color:var(--muted);">— not recorded —</div>`;
+        <div style="text-align:center;padding:6px 0;font-size:13px;color:var(--muted);">${isCompleted?'— not recorded —':'👁 View only'}</div>`;
     } else if(!hasScore){
       div.innerHTML=`<div class="court-lbl">Court ${match.court||mi+1}</div>
         <div class="teams-row"><div class="team">${teamALabel}${match.teamA.map(p=>pnameEl(p)).join('')}</div><div class="vs-lbl">VS</div><div class="team">${teamBLabel}${match.teamB.map(p=>pnameEl(p)).join('')}</div></div>
@@ -2475,7 +2494,7 @@ function renderTeamRanking(){
       const lPct=100-wPct-dPct;
       const drawStr=t.draws>0?` · ${t.draws}D`:'';
       html+=`<div class="win-strip">
-        <div style="font-size:11px;font-weight:600;color:var(--text);min-width:0;flex:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${t.name}</div>
+        <div class="ws-name">${t.name}</div>
         <div class="ws-bar">
           <div class="ws-w" style="flex:${wPct};"></div>
           ${t.draws>0?`<div class="ws-d" style="flex:${dPct};"></div>`:''}
