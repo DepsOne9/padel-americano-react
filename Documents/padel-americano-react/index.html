@@ -260,10 +260,10 @@ input[type=number]{-moz-appearance:textfield;}
 .win-strip{display:flex;align-items:center;gap:10px;padding:9px 12px;background:var(--surface);border-radius:10px;margin-bottom:7px;cursor:pointer;}
 .win-strip:active{opacity:0.75;}
 .ws-name{font-size:13px;font-weight:600;flex:1;}
-.ws-bar{flex:2;display:flex;align-items:center;gap:3px;}
-.ws-w{height:8px;background:var(--accent);border-radius:4px 0 0 4px;}
-.ws-d{height:8px;background:var(--muted);}
-.ws-l{height:8px;background:var(--accent2);border-radius:0 4px 4px 0;}
+.ws-bar{flex:2;display:flex;align-items:center;height:8px;border-radius:4px;overflow:hidden;background:var(--border);}
+.ws-w{height:100%;background:var(--accent);flex-shrink:0;}
+.ws-d{height:100%;background:var(--muted);flex-shrink:0;}
+.ws-l{height:100%;background:var(--accent2);flex-shrink:0;}
 .ws-ratio{font-size:12px;font-weight:700;color:var(--muted);min-width:40px;text-align:right;}
 .lb-footer{padding:14px 16px;display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;}
 .lb-footer-cell{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:10px 8px;text-align:center;}
@@ -339,6 +339,25 @@ input[type=number]{-moz-appearance:textfield;}
     <div class="row">
       <button class="btn btn-danger" style="flex:1;" id="modal-ok">Confirm</button>
       <button class="btn btn-secondary" style="flex:1;" id="modal-cancel">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── RENAME PLAYER MODAL ──────────────────────────────── -->
+<div class="modal-overlay" id="rename-modal">
+  <div class="modal-box">
+    <div class="modal-title">Rename Player</div>
+    <div class="modal-sub">Long-pressed: <span id="rename-old-label" style="color:var(--accent);font-weight:700;"></span></div>
+    <div class="fg" style="margin-bottom:16px;">
+      <label>New Name</label>
+      <input id="rename-input" type="text" placeholder="Enter name"
+        style="font-size:18px;font-weight:700;"
+        onkeydown="if(event.key==='Enter')doRenamePlayer()"/>
+    </div>
+    <div style="font-size:11px;color:var(--muted);margin-bottom:14px;line-height:1.5;">Updates all rounds in this tournament. If the new name matches a registered account it will auto-link on next completion.</div>
+    <div class="row">
+      <button class="btn btn-primary" style="flex:1;" onclick="doRenamePlayer()">Rename →</button>
+      <button class="btn btn-secondary" style="flex:1;" onclick="closeRenameModal()">Cancel</button>
     </div>
   </div>
 </div>
@@ -2087,7 +2106,8 @@ function renderTopBar(){
       <div style="display:flex;gap:8px;margin-bottom:8px;">
         ${isCompleted
           ?`<div style="flex:1;padding:9px 10px;background:rgba(107,127,163,0.08);border:1px solid var(--border);border-radius:10px;text-align:center;font-size:12px;font-weight:700;color:var(--muted);letter-spacing:0.3px;">✅ Completed</div>
-            <button onclick="reopenTournamentStatus()" style="flex:1;padding:9px 10px;background:rgba(0,229,160,0.07);border:1px solid rgba(0,229,160,0.25);border-radius:10px;color:var(--accent);font-size:13px;font-weight:700;cursor:pointer;letter-spacing:0.3px;">🔓 Reopen</button>`
+            <button onclick="reopenTournamentStatus()" style="flex:1;padding:9px 10px;background:rgba(0,229,160,0.07);border:1px solid rgba(0,229,160,0.25);border-radius:10px;color:var(--accent);font-size:13px;font-weight:700;cursor:pointer;letter-spacing:0.3px;">🔓 Reopen</button>
+            <button onclick="toggleTournamentRanked()" style="padding:9px 12px;background:${T.ranked===false?'rgba(107,127,163,0.08)':'rgba(0,229,160,0.07)'};border:1px solid ${T.ranked===false?'var(--border)':'rgba(0,229,160,0.25)'};border-radius:10px;color:${T.ranked===false?'var(--muted)':'var(--accent)'};font-size:15px;cursor:pointer;" title="${T.ranked===false?'Make Ranked':'Make Private'}">${T.ranked===false?'🔒':'🏆'}</button>`
           :`<button onclick="markTournamentComplete()" style="flex:1;padding:9px 10px;background:rgba(255,209,102,0.08);border:1px solid rgba(255,209,102,0.25);border-radius:10px;color:var(--accent3);font-size:13px;font-weight:700;cursor:pointer;letter-spacing:0.3px;">🏁 Complete</button>
             <button onclick="reopenTournamentStatus()" style="display:none;"></button>`
         }
@@ -2164,9 +2184,9 @@ function renderMatch(ri,mi){
     const locked=T.status==='completed';
     div.innerHTML=`<div class="court-lbl">Court ${match.court||mi+1}</div>
       <div class="teams-row">
-        <div class="team" style="${wA?'color:var(--accent)':''}">${teamALabel}${match.teamA.map(p=>`<span class="pname" onclick="onPlayerTap('${p}')">${p}</span>`).join('')}</div>
+        <div class="team" style="${wA?'color:var(--accent)':''}">${teamALabel}${match.teamA.map(p=>pnameEl(p)).join('')}</div>
         <div style="text-align:center;flex-shrink:0;min-width:80px;"><div class="saved-score"><span style="color:${wA?'var(--accent)':'var(--muted)'}">${match.scoreA}</span><span style="color:var(--muted);font-size:22px;"> – </span><span style="color:${!wA?'var(--accent2)':'var(--muted)'}">${match.scoreB}</span></div></div>
-        <div class="team" style="${!wA?'color:var(--accent2)':''}">${teamBLabel}${match.teamB.map(p=>`<span class="pname" onclick="onPlayerTap('${p}')">${p}</span>`).join('')}</div>
+        <div class="team" style="${!wA?'color:var(--accent2)':''}">${teamBLabel}${match.teamB.map(p=>pnameEl(p)).join('')}</div>
       </div>
       ${locked?'<div style="font-size:11px;color:var(--muted);text-align:center;margin-top:4px;">🔒 Locked</div>':`<button class="edit-btn" onclick="editScore(${ri},${mi})">Edit score</button>`}`;
   } else {
@@ -2174,16 +2194,16 @@ function renderMatch(ri,mi){
     const isCompleted=T.status==='completed';
     if(isCompleted){
       div.innerHTML=`<div class="court-lbl">Court ${match.court||mi+1}</div>
-        <div class="teams-row"><div class="team">${teamALabel}${match.teamA.map(p=>`<span class="pname" onclick="onPlayerTap('${p}')">${p}</span>`).join('')}</div><div class="vs-lbl">VS</div><div class="team">${teamBLabel}${match.teamB.map(p=>`<span class="pname" onclick="onPlayerTap('${p}')">${p}</span>`).join('')}</div></div>
+        <div class="teams-row"><div class="team">${teamALabel}${match.teamA.map(p=>pnameEl(p)).join('')}</div><div class="vs-lbl">VS</div><div class="team">${teamBLabel}${match.teamB.map(p=>pnameEl(p)).join('')}</div></div>
         <div style="text-align:center;padding:6px 0;font-size:13px;color:var(--muted);">— not recorded —</div>`;
     } else if(!hasScore){
       div.innerHTML=`<div class="court-lbl">Court ${match.court||mi+1}</div>
-        <div class="teams-row"><div class="team">${teamALabel}${match.teamA.map(p=>`<span class="pname" onclick="onPlayerTap('${p}')">${p}</span>`).join('')}</div><div class="vs-lbl">VS</div><div class="team">${teamBLabel}${match.teamB.map(p=>`<span class="pname" onclick="onPlayerTap('${p}')">${p}</span>`).join('')}</div></div>
+        <div class="teams-row"><div class="team">${teamALabel}${match.teamA.map(p=>pnameEl(p)).join('')}</div><div class="vs-lbl">VS</div><div class="team">${teamBLabel}${match.teamB.map(p=>pnameEl(p)).join('')}</div></div>
         <button class="enter-score-btn" onclick="openScoreEntry(${ri},${mi})">+ Enter Score</button>`;
     } else {
       const sA=match.scoreA??0,sB=match.scoreB??0,tot=sA+sB,over=tot>ppg;
       div.innerHTML=`<div class="court-lbl">Court ${match.court||mi+1}</div>
-        <div class="teams-row"><div class="team">${teamALabel}${match.teamA.map(p=>`<span class="pname" onclick="onPlayerTap('${p}')">${p}</span>`).join('')}</div><div class="vs-lbl">VS</div><div class="team">${teamBLabel}${match.teamB.map(p=>`<span class="pname" onclick="onPlayerTap('${p}')">${p}</span>`).join('')}</div></div>
+        <div class="teams-row"><div class="team">${teamALabel}${match.teamA.map(p=>pnameEl(p)).join('')}</div><div class="vs-lbl">VS</div><div class="team">${teamBLabel}${match.teamB.map(p=>pnameEl(p)).join('')}</div></div>
         <div class="score-row">
           <input class="score-inp ${over?'over':''}" type="number" id="sA-${ri}-${mi}" placeholder="0" value="${sA||''}" min="0" max="${ppg}" oninput="onInput(${ri},${mi},'A')" onblur="onBlur(${ri},${mi},'A')"/>
           <div class="score-dash">–</div>
@@ -2256,6 +2276,49 @@ async function reopenTournamentStatus(){
   toast('Tournament reopened — scoring unlocked 🔓');
 }
 
+async function toggleTournamentRanked(){
+  const isCurrentlyRanked=T.ranked!==false;
+  const newRanked=!isCurrentlyRanked;
+  const label=newRanked?'Make Ranked':'Make Private';
+  const body=newRanked
+    ?'Results will count towards leaderboards and be linked to player profiles.'
+    :'Results will be removed from leaderboards. Player profile history will be updated.';
+  const confirmed=await showConfirm(label,body,label);
+  if(!confirmed)return;
+  T.ranked=newRanked;
+  await fbSaveT(T);
+  upsertMyTournament(T,true);
+  // Update player history entries for this tournament
+  if(navigator.onLine){
+    try{
+      const allData=await window._fbGet('players');
+      if(allData){
+        for(const [uid,p] of Object.entries(allData)){
+          if(!p.tournaments)continue;
+          const idx=p.tournaments.findIndex(th=>th.code===T.code);
+          if(idx<0)continue;
+          p.tournaments[idx]={...p.tournaments[idx],ranked:newRanked};
+          await window._fbSet(`players/${uid}`,p);
+          if(currentUser&&currentUser.uid===uid)currentUser=p;
+        }
+      }
+    }catch(e){}
+  }
+  // If switching to Ranked and tournament was never committed, commit now
+  if(newRanked){
+    const hasEntries=await (async()=>{
+      try{
+        const allData=await window._fbGet('players');
+        if(!allData)return false;
+        return Object.values(allData).some(p=>(p.tournaments||[]).some(th=>th.code===T.code));
+      }catch(e){return false;}
+    })();
+    if(!hasEntries) await commitTournamentToProfiles();
+  }
+  renderTopBar();
+  toast(newRanked?'Tournament is now Ranked 🏆':'Tournament is now Private 🔒');
+}
+
 async function deleteTournament(){
   const confirmed=await showConfirm('Delete Tournament','This permanently deletes the tournament for everyone. This cannot be undone.','Delete 🗑','danger');
   if(!confirmed)return;
@@ -2314,7 +2377,7 @@ async function commitTournamentToProfiles(){
           draws:teamSt.draws||0, played:teamSt.played,
           rank:teamStandings.indexOf(teamSt)+1, totalPlayers:teamStandings.length,
           teamName:teamSt.name, roundScores:teamSt.roundScores||[],
-          ppg:T.pointsPerGame, tournMode:'teams', teamsMode:'fixed'
+          ppg:T.pointsPerGame, tournMode:'teams', teamsMode:'fixed', ranked:T.ranked!==false
         };
         const updated=[...existing,entry];
         if(updated.length>10) updated.splice(0,updated.length-10);
@@ -2342,7 +2405,7 @@ async function commitTournamentToProfiles(){
         draws:st.draws||0, played:st.played,
         rank:standings.indexOf(st)+1, totalPlayers:standings.length,
         roundScores:st.roundScores||[], ppg:T.pointsPerGame,
-        tournMode:T.tournMode||'individual', teamsMode:T.teamsMode||null
+        tournMode:T.tournMode||'individual', teamsMode:T.teamsMode||null, ranked:T.ranked!==false
       };
       const updated=[...existing,entry];
       if(updated.length>10) updated.splice(0,updated.length-10);
@@ -2492,9 +2555,9 @@ function renderTeamRanking(){
       html+=`<div class="win-strip">
         <div style="font-size:11px;font-weight:600;color:var(--text);min-width:0;flex:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${t.name}</div>
         <div class="ws-bar">
-          <div class="ws-w" style="width:${wPct}%;"></div>
-          ${t.draws>0?`<div class="ws-d" style="width:${dPct}%;"></div>`:''}
-          <div class="ws-l" style="width:${lPct}%;"></div>
+          <div class="ws-w" style="flex:${wPct};"></div>
+          ${t.draws>0?`<div class="ws-d" style="flex:${dPct};"></div>`:''}
+          <div class="ws-l" style="flex:${lPct};"></div>
         </div>
         <div class="ws-ratio">${t.wins}W${drawStr} · ${t.losses}L</div>
       </div>`;
@@ -2584,9 +2647,9 @@ function renderIndividualRanking(){
       html+=`<div class="win-strip" onclick="onPlayerTap('${p.name}')">
         <div class="ws-name">${p.name}</div>
         <div class="ws-bar">
-          <div class="ws-w" style="width:${wPct}%;"></div>
-          ${p.draws>0?`<div class="ws-d" style="width:${dPct}%;"></div>`:''}
-          <div class="ws-l" style="width:${lPct}%;"></div>
+          <div class="ws-w" style="flex:${wPct};"></div>
+          ${p.draws>0?`<div class="ws-d" style="flex:${dPct};"></div>`:''}
+          <div class="ws-l" style="flex:${lPct};"></div>
         </div>
         <div class="ws-ratio">${p.wins}W${drawStr} · ${p.losses}L</div>
       </div>`;
@@ -2626,6 +2689,100 @@ async function onPlayerTap(name){
     }catch(e){}
   }
   // No linked account found — silently do nothing
+}
+
+// ═══════════════════════════════════
+//  RENAME PLAYER (creator only, long-press)
+// ═══════════════════════════════════
+let _renameOldName='';
+let _lpFired=false; // suppresses onclick after a long-press fires
+
+function isCreatorOfTournament(){
+  return !!(T&&currentUser&&T.createdBy&&currentUser.username===T.createdBy);
+}
+
+// Returns HTML for a player name span — with long-press rename for creator
+function pnameEl(name){
+  const safe=name.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+  if(!isCreatorOfTournament()){
+    return `<span class="pname" onclick="onPlayerTap('${safe}')">${name}</span>`;
+  }
+  // Long-press: 500ms hold triggers rename; _lpFired suppresses the subsequent click
+  return `<span class="pname"
+    onclick="if(!_lpFired){onPlayerTap('${safe}');}else{_lpFired=false;}"
+    ontouchstart="window._lpTimer=setTimeout(()=>{_lpFired=true;startRenamePlayer('${safe}');},500)"
+    ontouchend="clearTimeout(window._lpTimer)"
+    ontouchcancel="clearTimeout(window._lpTimer)"
+    onmousedown="window._lpTimer=setTimeout(()=>{_lpFired=true;startRenamePlayer('${safe}');},500)"
+    onmouseup="clearTimeout(window._lpTimer)"
+    onmouseleave="clearTimeout(window._lpTimer)"
+    title="Hold to rename"
+    style="cursor:pointer;">${name}</span>`;
+}
+
+function startRenamePlayer(name){
+  clearTimeout(window._lpTimer);
+  _renameOldName=name;
+  document.getElementById('rename-old-label').textContent=name;
+  const inp=document.getElementById('rename-input');
+  inp.value=name;
+  document.getElementById('rename-modal').classList.add('show');
+  setTimeout(()=>inp.focus(),100);
+}
+
+function closeRenameModal(){
+  document.getElementById('rename-modal').classList.remove('show');
+  _renameOldName='';
+}
+
+async function doRenamePlayer(){
+  const newName=document.getElementById('rename-input').value.trim();
+  if(!newName){toast('Enter a name',true);return;}
+  if(newName===_renameOldName){closeRenameModal();return;}
+  if(!T||!isCreatorOfTournament()){closeRenameModal();return;}
+  const old=_renameOldName;
+  closeRenameModal();
+
+  // 1. Replace everywhere in T
+  T.players=T.players.map(p=>p===old?newName:p);
+  T.rounds.forEach(round=>{
+    round.matches.forEach(m=>{
+      m.teamA=m.teamA.map(p=>p===old?newName:p);
+      m.teamB=m.teamB.map(p=>p===old?newName:p);
+    });
+    if(round.byes)round.byes=round.byes.map(p=>p===old?newName:p);
+  });
+  if(T.teams){
+    T.teams=T.teams.map(team=>({...team,players:team.players.map(p=>p===old?newName:p)}));
+  }
+
+  // 2. Save updated tournament
+  await fbSaveT(T);
+  renderTournament();
+  toast(`Renamed "${old}" → "${newName}" ✓`);
+
+  // 3. If completed + ranked: strip old entry from ALL profiles, then re-commit clean
+  //    This bypasses the skip-guard so the new name can link correctly
+  if(T.status==='completed'&&T.ranked!==false&&navigator.onLine){
+    try{
+      const allData=await window._fbGet('players');
+      if(allData){
+        for(const [uid,p] of Object.entries(allData)){
+          if(!p.tournaments)continue;
+          const before=p.tournaments.length;
+          const stripped=p.tournaments.filter(th=>th.code!==T.code);
+          if(stripped.length!==before){
+            await window._fbSet(`players/${uid}`,{...p,tournaments:stripped});
+            if(currentUser&&currentUser.uid===uid)currentUser={...p,tournaments:stripped};
+          }
+        }
+      }
+      // Now re-commit with the updated names — no skip-guard will block it
+      await commitTournamentToProfiles();
+    }catch(e){
+      toast('Profile re-link failed — check connection',true);
+    }
+  }
 }
 
 function showTournamentProfile(playerName){
@@ -2745,8 +2902,8 @@ function renderLbTabs(){
     <div class="lb-tab ${globalLbTab==='monthly'?'on':''}" onclick="switchGlobalLbTab('monthly')" style="flex:1;text-align:center;">🗓 ${now.toLocaleString('en-GB',{month:'short'})}</div>
     <div style="width:1px;background:var(--border);margin:6px 0;flex-shrink:0;"></div>
     <div class="lb-tab ${globalLbGender==='all'?'on':''}" onclick="switchLbGender('all')" style="flex:1;text-align:center;${globalLbGender!=='all'?'color:var(--accent);opacity:0.5;':''}">All</div>
-    <div class="lb-tab ${globalLbGender==='male'?'on':''}" onclick="switchLbGender('male')" style="flex:1;text-align:center;font-size:16px;${globalLbGender!=='male'?'color:var(--accent);opacity:0.5;':''}">♂</div>
-    <div class="lb-tab ${globalLbGender==='female'?'on':''}" onclick="switchLbGender('female')" style="flex:1;text-align:center;font-size:16px;${globalLbGender!=='female'?'color:var(--accent);opacity:0.5;':''}">♀</div>`;
+    <div class="lb-tab ${globalLbGender==='male'?'on':''}" onclick="switchLbGender('male')" style="flex:1;text-align:center;font-size:18px;font-weight:700;${globalLbGender!=='male'?'color:var(--accent);opacity:0.5;':''}">♂</div>
+    <div class="lb-tab ${globalLbGender==='female'?'on':''}" onclick="switchLbGender('female')" style="flex:1;text-align:center;font-size:18px;font-weight:700;${globalLbGender!=='female'?'color:var(--accent);opacity:0.5;':''}">♀</div>`;
 }
 
 function switchGlobalLbTab(tab){globalLbTab=tab;renderLbTabs();renderLbBody(window._cachedLbPlayers||[]);}
