@@ -547,6 +547,11 @@ let _authResolved=false;
 let globalLbTab='yearly', globalLbGender='all';
 let setupTournMode='individual', setupTeamsMode='fixed', setupIsRanked=true;
 const TEAM_COLORS=['#00e5a0','#ffd166','#ff5c5c','#00b4d8','#a78bfa','#f97316'];
+// Emails allowed to see the Clean up button — add more as needed
+const CLEANUP_ALLOWED_EMAILS=['valegheorghiu@gmail.com'];
+function canShowCleanup(){
+  return !!(currentUser&&currentUser.email&&CLEANUP_ALLOWED_EMAILS.includes(currentUser.email));
+}
 let setupTeams=[
   {name:'Team A',color:TEAM_COLORS[0],players:['','']},
   {name:'Team B',color:TEAM_COLORS[1],players:['','']}
@@ -743,7 +748,7 @@ function renderMyGames(){
   }
   let html=`<div style="display:flex;align-items:center;justify-content:space-between;margin-top:4px;margin-bottom:10px;">
     <div class="sec" style="margin:0;">Completed (${done.length})</div>
-    <button onclick="cleanupTournaments()" style="background:transparent;border:1px solid var(--border);color:var(--muted);padding:5px 12px;border-radius:50px;font-size:11px;font-weight:700;cursor:pointer;letter-spacing:0.5px;">🗑 Clean up</button>
+    ${canShowCleanup()?`<button onclick="cleanupTournaments()" style="background:transparent;border:1px solid var(--border);color:var(--muted);padding:5px 12px;border-radius:50px;font-size:11px;font-weight:700;cursor:pointer;letter-spacing:0.5px;">🗑 Clean up</button>`:''}
   </div>`;
   done.forEach(t=>{html+=tournCard(t);});
   el.innerHTML=html;
@@ -905,7 +910,7 @@ function renderHomeTournList(){
   }
   let html=`<div style="display:flex;align-items:center;justify-content:space-between;margin-top:4px;margin-bottom:10px;">
     <div class="sec" style="margin:0;">Active (${active.length})</div>
-    <button onclick="cleanupTournaments()" style="background:transparent;border:1px solid var(--border);color:var(--muted);padding:5px 12px;border-radius:50px;font-size:11px;font-weight:700;cursor:pointer;letter-spacing:0.5px;">🗑 Clean up</button>
+    ${canShowCleanup()?`<button onclick="cleanupTournaments()" style="background:transparent;border:1px solid var(--border);color:var(--muted);padding:5px 12px;border-radius:50px;font-size:11px;font-weight:700;cursor:pointer;letter-spacing:0.5px;">🗑 Clean up</button>`:''}
   </div>`;
   active.forEach(t=>{html+=tournCard(t);});
   el.innerHTML=html;
@@ -2352,52 +2357,73 @@ function renderTeamRanking(){
   const allDone=savedM===totalM&&totalM>0;
   if(standings.every(s=>s.played===0)){pane.innerHTML=`<div class="empty"><div class="ei">🏆</div>Play some matches to see the ranking!</div>`;return;}
 
+  // Tabs — same as individual ranking
+  let html=`<div class="lb-tabs">
+    <div class="lb-tab ${lbTab==='points'?'on':''}" onclick="setLbTab('points')">Points</div>
+    <div class="lb-tab ${lbTab==='winrate'?'on':''}" onclick="setLbTab('winrate')">Win Rate</div>
+    <div class="lb-tab ${lbTab==='avg'?'on':''}" onclick="setLbTab('avg')">Avg/Match</div>
+  </div>`;
+
+  // Podium
   const top=standings.slice(0,Math.min(3,standings.length));
   const order=top.length>=3?[top[1],top[0],top[2]]:top.length===2?[top[1],top[0]]:[top[0]];
   const cls=top.length>=3?['p2','p1','p3']:top.length===2?['p2','p1']:['p1'];
-  let html=`<div class="podium-wrap">`;
+  html+=`<div class="podium-wrap">`;
   order.forEach((t,i)=>{
     if(!t)return;
     const pc=cls[i];
     const medals={'p1':'🥇','p2':'🥈','p3':'🥉'};
+    const val=lbTab==='points'?t.points:lbTab==='winrate'?`${t.played?Math.round(t.wins/(t.wins+t.losses+t.draws||1)*100):0}%`:`${t.played?(t.points/t.played).toFixed(1):0}`;
+    const lbl=lbTab==='points'?'pts':lbTab==='winrate'?'win rate':'avg';
     html+=`<div class="pod ${pc}">
       ${pc==='p1'?`<div style="font-size:20px;margin-bottom:4px;">${medals[pc]}</div>`:''}
       <div class="pod-avatar" style="background:${t.color||'var(--accent)'}20;border-color:${t.color||'var(--accent)'};">${t.name[0].toUpperCase()}</div>
-      <div class="pod-name" style="font-size:10px;">${t.name}</div>
-      <div class="pod-pts">${t.points}</div>
-      <div class="pod-lbl">pts</div>
+      <div class="pod-name" style="font-size:9px;white-space:normal;line-height:1.3;">${t.name}</div>
+      <div class="pod-pts">${val}</div>
+      <div class="pod-lbl">${lbl}</div>
       <div class="pod-block"></div>
     </div>`;
   });
   html+=`</div>`;
-  html+=`<div class="lb-section"><div class="lb-section-title">Points per Team</div>`;
+
+  // Bar section
+  const sectionTitle=lbTab==='points'?'Points per Team':lbTab==='winrate'?'Win Rate':'Avg Points / Match';
+  html+=`<div class="lb-section"><div class="lb-section-title">${sectionTitle}</div>`;
   standings.forEach((t,i)=>{
-    const pct=maxPts>0?Math.round(t.points/maxPts*100):0;
+    const raw=lbTab==='points'?t.points:lbTab==='winrate'?(t.played?Math.round(t.wins/(t.wins+t.losses+t.draws||1)*100):0):(t.played?(t.points/t.played):0);
+    const maxVal=lbTab==='points'?maxPts:lbTab==='winrate'?100:Math.max(...standings.map(s=>s.played?(s.points/s.played):0))||1;
+    const pct=maxVal>0?Math.round(raw/maxVal*100):0;
+    const disp=lbTab==='winrate'?`${raw}%`:lbTab==='avg'?Number(raw).toFixed(1):raw;
     html+=`<div class="bar-row">
-      <div class="bar-name" style="max-width:90px;font-size:11px;">${t.name}</div>
-      <div class="bar-track"><div class="bar-fill" style="width:${pct}%;background:${i<3?'var(--accent)':'var(--muted)'}"><span>${t.points}</span></div></div>
-      <div class="bar-total">${t.points}</div>
+      <div style="font-size:11px;font-weight:600;color:var(--text);min-width:0;flex:1.4;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${t.name}</div>
+      <div class="bar-track" style="flex:2;"><div class="bar-fill" style="width:${pct}%;background:${i<3?'var(--accent)':'var(--muted)'}"><span>${disp}</span></div></div>
+      <div class="bar-total">${disp}</div>
     </div>`;
   });
   html+=`</div>`;
-  html+=`<div class="lb-section"><div class="lb-section-title">Win / Loss / Draw</div>`;
-  standings.forEach(t=>{
-    const total=t.wins+t.losses+t.draws||1;
-    const wPct=Math.round(t.wins/total*100);
-    const dPct=Math.round(t.draws/total*100);
-    const lPct=100-wPct-dPct;
-    const drawStr=t.draws>0?` · ${t.draws}D`:'';
-    html+=`<div class="win-strip">
-      <div class="ws-name" style="font-size:11px;max-width:80px;">${t.name}</div>
-      <div class="ws-bar">
-        <div class="ws-w" style="width:${wPct}%;"></div>
-        ${t.draws>0?`<div class="ws-d" style="width:${dPct}%;"></div>`:''}
-        <div class="ws-l" style="width:${lPct}%;"></div>
-      </div>
-      <div class="ws-ratio">${t.wins}W${drawStr} · ${t.losses}L</div>
-    </div>`;
-  });
-  html+=`</div>`;
+
+  // Win/Loss/Draw section (only on points tab, same as individual)
+  if(lbTab==='points'){
+    html+=`<div class="lb-section"><div class="lb-section-title">Win / Loss / Draw</div>`;
+    standings.forEach(t=>{
+      const total=t.wins+t.losses+t.draws||1;
+      const wPct=Math.round(t.wins/total*100);
+      const dPct=Math.round(t.draws/total*100);
+      const lPct=100-wPct-dPct;
+      const drawStr=t.draws>0?` · ${t.draws}D`:'';
+      html+=`<div class="win-strip">
+        <div style="font-size:11px;font-weight:600;color:var(--text);min-width:0;flex:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${t.name}</div>
+        <div class="ws-bar">
+          <div class="ws-w" style="width:${wPct}%;"></div>
+          ${t.draws>0?`<div class="ws-d" style="width:${dPct}%;"></div>`:''}
+          <div class="ws-l" style="width:${lPct}%;"></div>
+        </div>
+        <div class="ws-ratio">${t.wins}W${drawStr} · ${t.losses}L</div>
+      </div>`;
+    });
+    html+=`</div>`;
+  }
+
   html+=`<div class="lb-footer">
     <div class="lb-footer-cell"><span class="fv">${T.rounds.length}</span><span class="fl">Rounds</span></div>
     <div class="lb-footer-cell"><span class="fv">${T.pointsPerGame}</span><span class="fl">Pts/Game</span></div>
@@ -2640,9 +2666,9 @@ function renderLbTabs(){
     <div class="lb-tab ${globalLbTab==='yearly'?'on':''}" onclick="switchGlobalLbTab('yearly')" style="flex:1;text-align:center;">📅 ${now.getFullYear()}</div>
     <div class="lb-tab ${globalLbTab==='monthly'?'on':''}" onclick="switchGlobalLbTab('monthly')" style="flex:1;text-align:center;">🗓 ${now.toLocaleString('en-GB',{month:'short'})}</div>
     <div style="width:1px;background:var(--border);margin:6px 0;flex-shrink:0;"></div>
-    <div class="lb-tab ${globalLbGender==='all'?'on':''}" onclick="switchLbGender('all')" style="flex:1;text-align:center;">All</div>
-    <div class="lb-tab ${globalLbGender==='male'?'on':''}" onclick="switchLbGender('male')" style="flex:1;text-align:center;">♂</div>
-    <div class="lb-tab ${globalLbGender==='female'?'on':''}" onclick="switchLbGender('female')" style="flex:1;text-align:center;">♀</div>`;
+    <div class="lb-tab ${globalLbGender==='all'?'on':''}" onclick="switchLbGender('all')" style="flex:1;text-align:center;${globalLbGender!=='all'?'color:var(--accent);opacity:0.5;':''}">All</div>
+    <div class="lb-tab ${globalLbGender==='male'?'on':''}" onclick="switchLbGender('male')" style="flex:1;text-align:center;font-size:16px;${globalLbGender!=='male'?'color:var(--accent);opacity:0.5;':''}">♂</div>
+    <div class="lb-tab ${globalLbGender==='female'?'on':''}" onclick="switchLbGender('female')" style="flex:1;text-align:center;font-size:16px;${globalLbGender!=='female'?'color:var(--accent);opacity:0.5;':''}">♀</div>`;
 }
 
 function switchGlobalLbTab(tab){globalLbTab=tab;renderLbTabs();renderLbBody(window._cachedLbPlayers||[]);}
