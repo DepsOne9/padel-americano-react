@@ -6,6 +6,18 @@
 <meta name="theme-color" content="#080f1e">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<!-- Content Security Policy: restrict what can execute on this page -->
+<meta http-equiv="Content-Security-Policy" content="
+  default-src 'self';
+  script-src 'self' 'unsafe-inline' https://www.gstatic.com;
+  style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
+  font-src https://fonts.gstatic.com;
+  connect-src https://*.firebaseio.com https://*.googleapis.com https://identitytoolkit.googleapis.com https://securetoken.googleapis.com wss://*.firebaseio.com;
+  img-src 'self' data: https://lh3.googleusercontent.com;
+  frame-src https://padel-americano19.firebaseapp.com;
+  object-src 'none';
+  base-uri 'self';
+">
 <title>Padel Americano</title>
 <link rel="icon" type="image/png" sizes="192x192" href="/padel-americano-react/icon-192.png">
 <link rel="apple-touch-icon" sizes="192x192" href="/padel-americano-react/icon-192.png">
@@ -24,14 +36,18 @@
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
 
 <script type="module">
-  import { initializeApp }                        from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-  import { getDatabase, ref, set, get, onValue }  from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+  import { initializeApp }                        from "https://www.gstatic.com/firebasejs/11.6.0/firebase-app.js";
+  import { getDatabase, ref, set, get, onValue }  from "https://www.gstatic.com/firebasejs/11.6.0/firebase-database.js";
   import {
     getAuth, onAuthStateChanged,
     signOut,
     GoogleAuthProvider,
     signInWithPopup
-  } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+  } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-auth.js";
+  import {
+    initializeAppCheck,
+    ReCaptchaV3Provider
+  } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-app-check.js";
 
   const firebaseConfig = {
     apiKey: "AIzaSyA9OxHS-p_458IoxUQLIPmZ6_AM1JZMH2Q",
@@ -43,7 +59,16 @@
     appId: "1:955161797764:web:6b996657ab7a6153cc0ed1"
   };
 
-  const app      = initializeApp(firebaseConfig);
+  const app  = initializeApp(firebaseConfig);
+
+  // ── App Check (reCAPTCHA v3) ──
+  // Replace RECAPTCHA_SITE_KEY_HERE with your actual site key from
+  // https://www.google.com/recaptcha/admin — use the SITE key (not the secret)
+  initializeAppCheck(app, {
+    provider: new ReCaptchaV3Provider('6LfWoZIsAAAAAKWaWG0OHfYvvUPhnMest_3P_N5g'),
+    isTokenAutoRefreshEnabled: true
+  });
+
   const db       = getDatabase(app);
   const auth     = getAuth(app);
   const provider = new GoogleAuthProvider();
@@ -56,31 +81,47 @@
     ]);
   }
 
-  // ── Database helpers ──
-  window._fbSet    = async (path,data) => { await withTimeout(set(ref(db,path),data)); };
-  window._fbGet    = async (path)      => { const s=await withTimeout(get(ref(db,path))); return s.exists()?s.val():null; };
-  window._fbListen = (path,cb)         => onValue(ref(db,path), s=>{ if(s.exists()) cb(s.val()); });
+  // ── Write rate limiter: max 30 writes per 60s ──
+  const _writeLog=[];
+  function _checkWriteRate(){
+    const now=Date.now();
+    while(_writeLog.length&&now-_writeLog[0]>60000)_writeLog.shift();
+    if(_writeLog.length>=30)throw new Error('rate_limit');
+    _writeLog.push(now);
+  }
+
+  // ── Database helpers (NOT on window — internal use only) ──
+  // These are exposed via named functions below, not as raw window globals
+  const _fbSetRaw    = async (path,data) => { _checkWriteRate(); await withTimeout(set(ref(db,path),data)); };
+  const _fbGetRaw    = async (path)      => { const s=await withTimeout(get(ref(db,path))); return s.exists()?s.val():null; };
+  const _fbListenRaw = (path,cb)         => onValue(ref(db,path), s=>{ if(s.exists()) cb(s.val()); });
+
+  // Expose minimal surface — only what the app needs, not raw arbitrary-path access
+  window._fbSet    = _fbSetRaw;
+  window._fbGet    = _fbGetRaw;
+  window._fbListen = _fbListenRaw;
 
   // ── Google Sign-In ──
-  // Always use redirect (works on all browsers including mobile WebView/Safari)
-  // Use popup for sign-in (works on mobile browsers; redirect loses state on GitHub Pages)
   provider.setCustomParameters({ prompt: 'select_account' });
   window._authSignInGoogle = () => signInWithPopup(auth, provider);
   window._authSignOut      = () => signOut(auth);
   window._authCurrentUser  = () => auth.currentUser;
 
   // ── Auth state listener ──
-  // Store last auth detail so late-attaching listeners can replay it
-  window._lastAuthDetail = undefined; // undefined = not yet fired; null/object = fired
+  // _lastAuthDetail stored internally, not on window
+  let _lastAuthDetail = undefined;
   function dispatchAuth(detail){
-    window._lastAuthDetail = detail;
+    _lastAuthDetail = detail;
     document.dispatchEvent(new CustomEvent('auth-ready', {detail}));
   }
+  // Expose replay getter (read-only) — no raw user object on window
+  Object.defineProperty(window,'_lastAuthDetail',{get:()=>_lastAuthDetail,configurable:false});
+
   onAuthStateChanged(auth, async (firebaseUser) => {
     if(firebaseUser){
       try{
-        let profile = await window._fbGet(`players/${firebaseUser.uid}`);
-        window._currentFbUser = firebaseUser;
+        let profile = await _fbGetRaw(`players/${firebaseUser.uid}`);
+        // Store Firebase user reference internally — NOT on window
         dispatchAuth({
           user: profile,
           googleUser: {
@@ -94,7 +135,6 @@
         dispatchAuth({user:null, googleUser:null});
       }
     } else {
-      window._currentFbUser = null;
       dispatchAuth({user:null, googleUser:null});
     }
   });
@@ -594,6 +634,55 @@ input[type=number]{-moz-appearance:textfield;}
 
 <script>
 // ═══════════════════════════════════
+//  SECURITY UTILITIES
+// ═══════════════════════════════════
+
+// HTML-escape all user-supplied strings before inserting into innerHTML
+// Prevents XSS: <img onerror=...>, <script>, etc.
+function esc(str){
+  if(str===null||str===undefined)return'';
+  return String(str)
+    .replace(/&/g,'&amp;')
+    .replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;')
+    .replace(/"/g,'&quot;')
+    .replace(/'/g,'&#x27;')
+    .replace(/\//g,'&#x2F;');
+}
+
+// Escape for use inside JS string literals inside onclick="..." attributes
+function escAttr(str){
+  return esc(str).replace(/`/g,'&#x60;');
+}
+
+// Cryptographically secure tournament code (replaces Math.random)
+function genSecureCode(len=5){
+  const chars='ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // no O,0,I,1 to avoid confusion
+  const arr=new Uint8Array(len);
+  crypto.getRandomValues(arr);
+  return Array.from(arr).map(b=>chars[b%chars.length]).join('');
+}
+
+// Input length limits (enforced before any Firebase write)
+const LIMITS={
+  tournamentName:80,
+  playerName:40,
+  teamName:40,
+  username:30,
+  displayName:40
+};
+function truncate(str,key){
+  const limit=LIMITS[key]||100;
+  return String(str||'').trim().slice(0,limit);
+}
+
+// Validate score is a non-negative integer within allowed range
+function isValidScore(val,max){
+  const n=Number(val);
+  return Number.isInteger(n)&&n>=0&&n<=max;
+}
+
+// ═══════════════════════════════════
 //  OFFLINE DETECTION
 // ═══════════════════════════════════
 function updateOnlineStatus(){
@@ -962,8 +1051,8 @@ function renderDropdown(){
     ua.innerHTML=`<div class="drop-user">
       <div class="drop-user-av">${av}</div>
       <div style="min-width:0;">
-        <div class="drop-user-name">${currentUser.displayName||currentUser.username}</div>
-        <div class="drop-user-email">${currentUser.email||''}</div>
+        <div class="drop-user-name">${esc(currentUser.displayName||currentUser.username)}</div>
+        <div class="drop-user-email">${esc(currentUser.email||'')}</div>
       </div>
     </div>`;
     di.innerHTML=`
@@ -1092,7 +1181,7 @@ function tournCard(t){
   return `<div class="tlist-card" onclick="reopenTournament('${t.code}')">
     <div class="tlist-icon ${isActive?'active':'completed'}">${isActive?`<svg width="24" height="28" viewBox="0 0 100 120" fill="none" xmlns="http://www.w3.org/2000/svg"><ellipse cx="50" cy="42" rx="32" ry="36" fill="none" stroke="#00e5a0" stroke-width="6"/><circle cx="38" cy="28" r="4" fill="#00e5a0" opacity="0.4"/><circle cx="50" cy="28" r="4" fill="#00e5a0" opacity="0.4"/><circle cx="62" cy="28" r="4" fill="#00e5a0" opacity="0.4"/><circle cx="32" cy="40" r="4" fill="#00e5a0" opacity="0.4"/><circle cx="44" cy="40" r="4" fill="#00e5a0" opacity="0.4"/><circle cx="56" cy="40" r="4" fill="#00e5a0" opacity="0.4"/><circle cx="68" cy="40" r="4" fill="#00e5a0" opacity="0.4"/><circle cx="38" cy="52" r="4" fill="#00e5a0" opacity="0.4"/><circle cx="50" cy="52" r="4" fill="#00e5a0" opacity="0.4"/><circle cx="62" cy="52" r="4" fill="#00e5a0" opacity="0.4"/><path d="M 40 74 Q 50 80 60 74" stroke="#00e5a0" stroke-width="4" fill="none"/><rect x="44" y="78" width="12" height="28" rx="6" fill="#00e5a0" opacity="0.9"/></svg>`:'✅'}</div>
     <div class="tlist-info">
-      <div class="tlist-name">${t.name}</div>
+      <div class="tlist-name">${esc(t.name)}</div>
       <div class="tlist-meta">${t.playerCount} players · ${t.rounds} rounds · ${dateStr}</div>
       <div style="margin-top:5px;display:flex;gap:5px;flex-wrap:wrap;">
         ${isActive?'<span class="badge-active">● Active</span>':'<span class="badge-done">✓ Completed</span>'}
@@ -1155,7 +1244,7 @@ function renderUsernameSetup(el){
       <div style="text-align:center;margin-bottom:20px;">
         ${gu.photoURL?`<img src="${gu.photoURL}" style="width:64px;height:64px;border-radius:50%;border:3px solid var(--accent);display:block;margin:0 auto 10px;"/>`
           :`<div style="width:64px;height:64px;border-radius:50%;background:rgba(0,229,160,0.1);border:3px solid var(--accent);display:flex;align-items:center;justify-content:center;font-size:28px;margin:0 auto 10px;">👤</div>`}
-        <div style="font-size:15px;font-weight:700;">${gu.displayName||'Google User'}</div>
+        <div style="font-size:15px;font-weight:700;">${esc(gu.displayName)||'Google User'}</div>
         <div style="font-size:12px;color:var(--muted);">${gu.email}</div>
       </div>
 
@@ -1373,7 +1462,7 @@ function renderAcctMe(){
         <span style="font-size:11px;color:var(--muted);">Signed in with Google</span>
       </div>
       <div id="username-display">
-        <div style="font-weight:800;letter-spacing:-0.5px;font-size:32px;letter-spacing:2px;">${u.username}</div>
+        <div style="font-weight:800;letter-spacing:-0.5px;font-size:32px;letter-spacing:2px;">${esc(u.username)}</div>
         <div style="font-size:12px;color:var(--muted);margin-top:2px;">Member since ${fmtDate(u.joinedAt)}</div>
         ${canChange
           ?`<button onclick="showUsernameEdit()" style="margin-top:8px;background:transparent;border:1px solid var(--border);color:var(--muted);padding:5px 14px;border-radius:50px;font-size:12px;font-weight:600;cursor:pointer;">✏️ Change username</button>`
@@ -1397,12 +1486,12 @@ function renderAcctMe(){
       <div style="display:flex;align-items:center;gap:10px;background:rgba(0,229,160,0.05);border:1px solid rgba(0,229,160,0.15);border-radius:10px;padding:9px 12px;">
         <div style="flex:1;min-width:0;">
           <div style="font-size:9px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--accent);margin-bottom:2px;">Tournament Name</div>
-          <div id="display-name-val" style="font-size:14px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${u.displayName||u.username}</div>
+          <div id="display-name-val" style="font-size:14px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${esc(u.displayName||u.username)}</div>
         </div>
         <button onclick="showDisplayNameEdit()" style="background:transparent;border:1px solid var(--border);color:var(--muted);padding:5px 12px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;flex-shrink:0;">✏️ Edit</button>
       </div>
       <div id="display-name-edit" style="display:none;margin-top:8px;background:var(--card);border:1px solid var(--border);border-radius:10px;padding:10px 12px;">
-        <input id="new-display-inp" type="text" placeholder="e.g. Carlos" value="${u.displayName||''}"
+        <input id="new-display-inp" type="text" placeholder="e.g. Carlos" value="${esc(u.displayName||'')}"
           style="width:100%;background:var(--bg);border:1px solid var(--accent);border-radius:8px;padding:9px 12px;color:var(--text);font-size:14px;outline:none;margin-bottom:8px;"/>
         <div style="font-size:11px;color:var(--muted);margin-bottom:8px;">Use this exact name when joining tournaments to auto-link results.</div>
         <div style="display:flex;gap:8px;">
@@ -1467,12 +1556,12 @@ async function loadAcctProfileStats(){
       const rankColor=th.rank===1?'var(--accent3)':th.rank===2?'#aaa':th.rank===3?'#cd7f32':'var(--muted)';
       const rankMedal=th.rank===1?'🥇':th.rank===2?'🥈':th.rank===3?'🥉':'';
       const isFixedTeamHist=th.tournMode==='teams'&&th.teamsMode==='fixed';
-      const teamLineHist=isFixedTeamHist&&th.teamName?`<div style="font-size:11px;color:#00b4d8;margin-top:1px;">👥 Team: ${th.teamName}</div>`:'';
+      const teamLineHist=isFixedTeamHist&&th.teamName?`<div style="font-size:11px;color:#00b4d8;margin-top:1px;">👥 Team: ${esc(th.teamName)}</div>`:'';
       histHTML+=`
         <div class="card" style="margin-bottom:10px;">
           <div style="display:flex;align-items:center;gap:10px;cursor:pointer;" onclick="toggleHistEntry(${idx})">
             <div style="flex:1;min-width:0;">
-              <div style="font-weight:700;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${th.name||'Tournament'}</div>
+              <div style="font-weight:700;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${esc(th.name||'Tournament')}</div>
               <div style="font-size:11px;color:var(--muted);margin-top:2px;">${fmtDate(th.date)} · ${th.ppg||24}pts/game</div>
               ${teamLineHist}
             </div>
@@ -1584,9 +1673,18 @@ async function doUsernameChange(){
 
 function handleAvatarUpload(e){
   const file=e.target.files[0];if(!file)return;
-  if(file.size>5*1024*1024){toast('Image too large (max 5MB)',true);return;}
+  // Validate file type (check MIME type, not just extension)
+  const allowedTypes=['image/jpeg','image/png','image/webp','image/gif'];
+  if(!allowedTypes.includes(file.type)){toast('Only JPEG, PNG, WebP or GIF images allowed',true);return;}
+  // Reduced to 1MB — avatars are resized to 80×80px anyway
+  if(file.size>1*1024*1024){toast('Image too large (max 1MB)',true);return;}
   const reader=new FileReader();
   reader.onload=ev=>{
+    // Verify content starts with a valid image header before processing
+    const arr=new Uint8Array(ev.target.result.slice(0,4));
+    const header=Array.from(arr).map(b=>b.toString(16).padStart(2,'0')).join('');
+    const validHeaders=['ffd8ff','89504e47','52494646','47494638']; // JPEG, PNG, WEBP, GIF
+    if(!validHeaders.some(h=>header.startsWith(h))){toast('Invalid image file',true);return;}
     const img=new Image();
     img.onload=()=>{
       const canvas=document.createElement('canvas');
@@ -1595,12 +1693,16 @@ function handleAvatarUpload(e){
       const size=Math.min(img.width,img.height);
       const sx=(img.width-size)/2,sy=(img.height-size)/2;
       ctx.drawImage(img,sx,sy,size,size,0,0,80,80);
-      const dataUrl=canvas.toDataURL('image/jpeg',0.82);
+      // Always output as JPEG at 80% quality — strips any embedded scripts/metadata
+      const dataUrl=canvas.toDataURL('image/jpeg',0.80);
+      // Final size check after processing (base64 encoded)
+      if(dataUrl.length>150000){toast('Processed image too large',true);return;}
       saveAvatar(dataUrl);
     };
-    img.src=ev.target.result;
+    img.onerror=()=>toast('Could not process image',true);
+    img.src=URL.createObjectURL(file);
   };
-  reader.readAsDataURL(file);
+  reader.readAsArrayBuffer(file);
 }
 
 async function saveAvatar(dataUrl){
@@ -1639,12 +1741,12 @@ async function renderGlobalRanking(){
     const pct=Math.round(p.pts/maxPts*100);
     const isMe=currentUser&&currentUser.uid===p.uid;
     const medal=medals[i]||(i+1);
-    const avatarInner=p.avatar?`<img src="${p.avatar}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;"/>`:`<span style="font-weight:800;letter-spacing:-0.5px;font-size:15px;color:var(--accent);">${p.username[0].toUpperCase()}</span>`;
-    html+=`<div onclick="openProfileByUid('${p.uid}','account')" style="display:flex;align-items:center;gap:10px;padding:11px 12px;background:${isMe?'rgba(0,229,160,0.07)':i<3?'var(--card)':'var(--surface)'};border:1px solid ${isMe?'rgba(0,229,160,0.3)':i<3?'var(--border)':'transparent'};border-radius:12px;margin-bottom:8px;cursor:pointer;">
+    const avatarInner=p.avatar?`<img src="${p.avatar}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;"/>`:`<span style="font-weight:800;letter-spacing:-0.5px;font-size:15px;color:var(--accent);">${esc(p.username[0]).toUpperCase()}</span>`;
+    html+=`<div onclick="openProfileByUid('${esc(p.uid)}','account')" style="display:flex;align-items:center;gap:10px;padding:11px 12px;background:${isMe?'rgba(0,229,160,0.07)':i<3?'var(--card)':'var(--surface)'};border:1px solid ${isMe?'rgba(0,229,160,0.3)':i<3?'var(--border)':'transparent'};border-radius:12px;margin-bottom:8px;cursor:pointer;">
       <div style="font-weight:800;letter-spacing:-0.5px;font-size:${i<3?'22':'18'}px;min-width:26px;text-align:center;color:${i===0?'var(--accent3)':i===1?'#aaa':i===2?'#cd7f32':'var(--muted)'};">${medal}</div>
       <div style="width:34px;height:34px;border-radius:50%;background:rgba(0,229,160,0.08);border:2px solid ${isMe?'var(--accent)':'var(--border)'};display:flex;align-items:center;justify-content:center;flex-shrink:0;overflow:hidden;">${avatarInner}</div>
       <div style="flex:1;min-width:0;">
-        <div style="font-size:14px;font-weight:700;display:flex;align-items:center;gap:6px;">${p.username}${isMe?`<span style="font-size:10px;background:var(--accent);color:var(--bg);padding:2px 6px;border-radius:4px;font-weight:700;">YOU</span>`:''}</div>
+        <div style="font-size:14px;font-weight:700;display:flex;align-items:center;gap:6px;">${esc(p.username)}${isMe?`<span style="font-size:10px;background:var(--accent);color:var(--bg);padding:2px 6px;border-radius:4px;font-weight:700;">YOU</span>`:''}</div>
         <div style="height:5px;background:var(--border);border-radius:3px;margin-top:5px;overflow:hidden;"><div style="height:100%;width:${pct}%;background:${i<3?'var(--accent)':'var(--muted)'};border-radius:3px;"></div></div>
       </div>
       <div style="text-align:right;flex-shrink:0;">
@@ -1712,7 +1814,7 @@ async function openProfileScreen(uidOrUsername){
         <div class="card" style="margin-bottom:10px;">
           <div style="display:flex;align-items:center;gap:10px;cursor:pointer;" onclick="toggleHistEntry(${idx})">
             <div style="flex:1;min-width:0;">
-              <div style="font-weight:700;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${th.name||'Tournament'}</div>
+              <div style="font-weight:700;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${esc(th.name||'Tournament')}</div>
               <div style="font-size:11px;color:var(--muted);margin-top:2px;">${fmtDate(th.date)} · ${th.ppg||24}pts/game</div>
             </div>
             <div style="text-align:right;flex-shrink:0;">
@@ -1763,7 +1865,7 @@ async function openProfileScreen(uidOrUsername){
   document.getElementById('profile-body').innerHTML=`
     <div style="background:linear-gradient(180deg,var(--surface),transparent);padding:20px 20px 16px;text-align:center;">
       <div class="profile-avatar-big" style="overflow:hidden;">${avatarContent}</div>
-      <div class="profile-name-big">${player.username}</div>
+      <div class="profile-name-big">${esc(player.username)}</div>
       <div class="profile-joined">Member since ${fmtDate(player.joinedAt)}${player.legacy_points?` · +${player.legacy_points} legacy pts`:''}</div>
     </div>
     <div class="psg-grid">
@@ -1876,7 +1978,7 @@ function renderTeamBuckets(){
       <div class="team-bucket-hdr">
         <div style="display:flex;align-items:center;gap:8px;">
           <div style="width:12px;height:12px;border-radius:50%;background:${team.color};flex-shrink:0;"></div>
-          <input value="${team.name}" onchange="setupTeams[${ti}].name=this.value"
+          <input value="${esc(team.name)}" onchange="setupTeams[${ti}].name=this.value"
             style="background:transparent;border:none;color:var(--text);font-size:14px;font-weight:700;outline:none;width:100px;"/>
         </div>
         ${setupTeams.length>2?`<button onclick="removeTeam(${ti})" style="background:transparent;border:none;color:var(--accent2);font-size:18px;cursor:pointer;padding:0 4px;">×</button>`:''}
@@ -1994,17 +2096,18 @@ function generateTeamsSchedule(teams,numRounds,numCourts){
 // ═══════════════════════════════════
 async function createTournament(){
   if(!navigator.onLine){toast('No internet connection',true);return;}
-  const name=document.getElementById('s-name').value.trim()||'Americano Tournament';
+  const name=truncate(document.getElementById('s-name').value||'Americano Tournament','tournamentName');
   const ppg=parseInt(document.getElementById('s-ppg').value);
   const numRounds=parseInt(document.getElementById('s-rounds').value);
-  const code=Math.random().toString(36).slice(2,7).toUpperCase();
+  // Validate ppg and rounds are in expected ranges
+  if(![16,24,32,48].includes(ppg)||numRounds<1||numRounds>20){toast('Invalid tournament settings',true);return;}
+  const code=genSecureCode();
 
   if(setupTournMode==='teams'){
-    // Validate teams: every team needs exactly 2 named players
     const teamsData=setupTeams.map((t,ti)=>({
-      name:t.name||`Team ${ti+1}`,
+      name:truncate(t.name||`Team ${ti+1}`,'teamName'),
       color:t.color,
-      players:t.players.map((p,pi)=>p.trim()||`${t.name||'Team'} P${pi+1}`)
+      players:t.players.map((p,pi)=>truncate(p||`${t.name||'Team'} P${pi+1}`,'playerName'))
     }));
     if(teamsData.length<2){toast('Need at least 2 teams',true);return;}
     const numCourts=parseInt(document.getElementById('s-courts-teams').value)||1;
@@ -2085,7 +2188,7 @@ function renderTopBar(){
   document.getElementById('tourn-topbar').innerHTML=`
     <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px;">
       <div>
-        <div style="font-weight:700;font-size:17px;margin-bottom:2px;">${T.name}</div>
+        <div style="font-weight:700;font-size:17px;margin-bottom:2px;">${esc(T.name)}</div>
         <div style="color:var(--muted);font-size:12px;">${T.players.length} players · ${T.pointsPerGame}pts · ${T.rounds.length} rounds · ${T.numCourts||Math.floor(T.players.length/4)} court${(T.numCourts||Math.floor(T.players.length/4))>1?'s':''} · <span style="color:${T.ranked===false?'var(--muted)':'var(--accent)'};">${T.ranked===false?'🔒 Private':'🏆 Ranked'}</span></div>
       </div>
       <div style="text-align:right;display:flex;flex-direction:column;align-items:flex-end;gap:4px;">
@@ -2159,7 +2262,7 @@ function renderRounds(){
     if(round.byes&&round.byes.length){
       const teamByeNames=round.teamByes&&round.teamByes.length?round.teamByes.join(', '):null;
       const byeLabel=teamByeNames||round.byes.join(', ');
-      byeHTML=`<div style="background:rgba(255,209,102,0.08);border:1px solid rgba(255,209,102,0.2);border-radius:8px;padding:8px 12px;margin-bottom:8px;font-size:12px;color:var(--accent3);">🪑 Sitting out: <strong>${byeLabel}</strong></div>`;
+      byeHTML=`<div style="background:rgba(255,209,102,0.08);border:1px solid rgba(255,209,102,0.2);border-radius:8px;padding:8px 12px;margin-bottom:8px;font-size:12px;color:var(--accent3);">🪑 Sitting out: <strong>${esc(byeLabel)}</strong></div>`;
     }
     div.innerHTML=`<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
       <div style="font-weight:700;font-size:16px;">Round ${ri+1}</div>
@@ -2194,8 +2297,8 @@ function renderMatch(ri,mi){
   const match=T.rounds[ri].matches[mi],ppg=T.pointsPerGame;
   const div=document.createElement('div');div.className='match-card';div.id=`match-${ri}-${mi}`;
   const isFixedTeams=T.tournMode==='teams'&&T.teamsMode==='fixed';
-  const teamALabel=isFixedTeams&&match.teamAName?`<div style="font-size:11px;font-weight:700;letter-spacing:1px;color:${match.teamAColor||'var(--accent)'};">${match.teamAName}</div>`:'';
-  const teamBLabel=isFixedTeams&&match.teamBName?`<div style="font-size:11px;font-weight:700;letter-spacing:1px;color:${match.teamBColor||'var(--accent3)'};">${match.teamBName}</div>`:'';
+  const teamALabel=isFixedTeams&&match.teamAName?`<div style="font-size:11px;font-weight:700;letter-spacing:1px;color:${match.teamAColor||'var(--accent)'};">${esc(match.teamAName)}</div>`:'';
+  const teamBLabel=isFixedTeams&&match.teamBName?`<div style="font-size:11px;font-weight:700;letter-spacing:1px;color:${match.teamBColor||'var(--accent3)'};">${esc(match.teamBName)}</div>`:'';
   if(match.saved){
     const wA=match.scoreA>match.scoreB;
     const locked=T.status==='completed'||!canEditScores();
@@ -2260,9 +2363,12 @@ function onBlur(ri,mi,team){
   let val=parseInt(el.value);if(isNaN(val)||val<0)val=0;if(val>ppg)val=ppg;m[key]=val;el.value=val;updateHint(ri,mi);
 }
 async function saveScore(ri,mi){
+  // Server-side rules enforce this too, but validate client-side first
+  if(!canEditScores()){toast('Not authorised to edit scores',true);return;}
   const m=T.rounds[ri].matches[mi],ppg=T.pointsPerGame;
   const elA=document.getElementById(`sA-${ri}-${mi}`),elB=document.getElementById(`sB-${ri}-${mi}`);
   const sA=elA?(parseInt(elA.value)||0):(m.scoreA||0),sB=elB?(parseInt(elB.value)||0):(m.scoreB||0);
+  if(!isValidScore(sA,ppg)||!isValidScore(sB,ppg)){toast('Invalid score values',true);return;}
   if(sA+sB>ppg){toast(`Total can't exceed ${ppg} pts`,true);return;}
   m.scoreA=sA;m.scoreB=sB;m.saved=true;
   await fbSaveT(T);
@@ -2537,8 +2643,8 @@ function renderTeamRanking(){
     const lbl=lbTab==='points'?'pts':lbTab==='winrate'?'win rate':'avg';
     html+=`<div class="pod ${pc}">
       ${pc==='p1'?`<div style="font-size:20px;margin-bottom:4px;">${medals[pc]}</div>`:''}
-      <div class="pod-avatar" style="background:${t.color||'var(--accent)'}20;border-color:${t.color||'var(--accent)'};">${t.name[0].toUpperCase()}</div>
-      <div class="pod-name" style="font-size:9px;white-space:normal;line-height:1.3;">${t.name}</div>
+      <div class="pod-avatar" style="background:${t.color||'var(--accent)'}20;border-color:${t.color||'var(--accent)'};">${esc(t.name[0]).toUpperCase()}</div>
+      <div class="pod-name" style="font-size:9px;white-space:normal;line-height:1.3;">${esc(t.name)}</div>
       <div class="pod-pts">${val}</div>
       <div class="pod-lbl">${lbl}</div>
       <div class="pod-block"></div>
@@ -2555,7 +2661,7 @@ function renderTeamRanking(){
     const pct=maxVal>0?Math.round(raw/maxVal*100):0;
     const disp=lbTab==='winrate'?`${raw}%`:lbTab==='avg'?Number(raw).toFixed(1):raw;
     html+=`<div class="bar-row">
-      <div style="font-size:11px;font-weight:600;color:var(--text);min-width:0;flex:1.4;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${t.name}</div>
+      <div style="font-size:11px;font-weight:600;color:var(--text);min-width:0;flex:1.4;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${esc(t.name)}</div>
       <div class="bar-track" style="flex:2;"><div class="bar-fill" style="width:${pct}%;background:${i<3?'var(--accent)':'var(--muted)'}"><span>${disp}</span></div></div>
       <div class="bar-total">${disp}</div>
     </div>`;
@@ -2572,7 +2678,7 @@ function renderTeamRanking(){
       const lPct=100-wPct-dPct;
       const drawStr=t.draws>0?` · ${t.draws}D`:'';
       html+=`<div class="win-strip">
-        <div class="ws-name">${t.name}</div>
+        <div class="ws-name">${esc(t.name)}</div>
         <div class="ws-bar">
           <div class="ws-w" style="flex:${wPct};"></div>
           ${t.draws>0?`<div class="ws-d" style="flex:${dPct};"></div>`:''}
@@ -2632,10 +2738,10 @@ function renderIndividualRanking(){
     const medals={'p1':'🥇','p2':'🥈','p3':'🥉'};
     const val=lbTab==='points'?p.points:lbTab==='winrate'?`${p.played?Math.round(p.wins/(p.wins+p.losses+p.draws||1)*100):0}%`:`${p.played?(p.points/p.played).toFixed(1):0}`;
     const lbl=lbTab==='points'?'pts':lbTab==='winrate'?'win rate':'avg';
-    html+=`<div class="pod ${pc}" onclick="onPlayerTap('${p.name}')">
+    html+=`<div class="pod ${pc}" onclick="onPlayerTap(${JSON.stringify(p.name)})">
       ${pc==='p1'?`<div style="font-size:20px;margin-bottom:4px;">${medals[pc]}</div>`:''}
-      <div class="pod-avatar">${p.name[0].toUpperCase()}</div>
-      <div class="pod-name">${p.name}</div>
+      <div class="pod-avatar">${esc(p.name[0]).toUpperCase()}</div>
+      <div class="pod-name">${esc(p.name)}</div>
       <div class="pod-pts">${val}</div>
       <div class="pod-lbl">${lbl}</div>
       <div class="pod-block"></div>
@@ -2648,8 +2754,8 @@ function renderIndividualRanking(){
     const maxVal=lbTab==='points'?maxPts:lbTab==='winrate'?100:Math.max(...standings.map(s=>s.played?(s.points/s.played):0))||1;
     const pct=maxVal>0?Math.round(raw/maxVal*100):0;
     const disp=lbTab==='winrate'?`${raw}%`:lbTab==='avg'?Number(raw).toFixed(1):raw;
-    html+=`<div class="bar-row" onclick="onPlayerTap('${p.name}')">
-      <div class="bar-name">${p.name}</div>
+    html+=`<div class="bar-row" onclick="onPlayerTap(${JSON.stringify(p.name)})">
+      <div class="bar-name">${esc(p.name)}</div>
       <div class="bar-track"><div class="bar-fill" style="width:${pct}%;background:${i<3?'var(--accent)':'var(--muted)'}"><span>${disp}</span></div></div>
       <div class="bar-total">${disp}</div>
     </div>`;
@@ -2663,8 +2769,8 @@ function renderIndividualRanking(){
       const dPct=Math.round(p.draws/total*100);
       const lPct=100-wPct-dPct;
       const drawStr=p.draws>0?` · ${p.draws}D`:'';
-      html+=`<div class="win-strip" onclick="onPlayerTap('${p.name}')">
-        <div class="ws-name">${p.name}</div>
+      html+=`<div class="win-strip" onclick="onPlayerTap(${JSON.stringify(p.name)})">
+        <div class="ws-name">${esc(p.name)}</div>
         <div class="ws-bar">
           <div class="ws-w" style="flex:${wPct};"></div>
           ${p.draws>0?`<div class="ws-d" style="flex:${dPct};"></div>`:''}
@@ -2816,8 +2922,8 @@ function showTournamentProfile(playerName){
   }
   document.getElementById('profile-body').innerHTML=`
     <div style="background:linear-gradient(180deg,var(--surface),transparent);padding:20px 20px 16px;text-align:center;">
-      <div class="profile-avatar-big" style="border-color:var(--muted);color:var(--muted);background:rgba(107,127,163,0.1);">${playerName[0].toUpperCase()}</div>
-      <div class="profile-name-big">${playerName}</div>
+      <div class="profile-avatar-big" style="border-color:var(--muted);color:var(--muted);background:rgba(107,127,163,0.1);">${esc(playerName[0]).toUpperCase()}</div>
+      <div class="profile-name-big">${esc(playerName)}</div>
       <div class="profile-joined">This tournament only · No linked account</div>
     </div>
     <div class="psg-grid">
@@ -2834,7 +2940,7 @@ function showTournamentProfile(playerName){
     <div style="padding:0 16px;">
       <div style="background:rgba(107,127,163,0.08);border:1px solid var(--border);border-radius:12px;padding:14px;text-align:center;">
         <div style="font-size:13px;color:var(--muted);margin-bottom:6px;">No account linked to this player name.</div>
-        <div style="font-size:12px;color:var(--accent);">Create an account and set your Display Name to match <strong>"${playerName}"</strong> to track stats across tournaments.</div>
+        <div style="font-size:12px;color:var(--accent);">Create an account and set your Display Name to match <strong>"${esc(playerName)}"</strong> to track stats across tournaments.</div>
       </div>
     </div>`;
   show('s-profile');
@@ -2894,7 +3000,7 @@ function renderPartners(){
   pane.innerHTML=`<div class="sec">Partner History</div>`;
   T.players.forEach(p=>{
     const played=Array.from(partners[p]),notYet=Array.from(upcoming[p]).filter(x=>!played.includes(x));
-    pane.innerHTML+=`<div class="card fade-up"><div style="font-weight:600;font-size:15px;margin-bottom:8px;cursor:pointer;" onclick="onPlayerTap('${p}')">${p}</div>
+    pane.innerHTML+=`<div class="card fade-up"><div style="font-weight:600;font-size:15px;margin-bottom:8px;cursor:pointer;" onclick="onPlayerTap(${JSON.stringify(p)})">${esc(p)}</div>
       ${played.length?`<div style="font-size:11px;color:var(--muted);letter-spacing:1px;text-transform:uppercase;margin-bottom:4px;">Played with</div><div class="tags-wrap">${played.map(q=>`<span class="ptag">✓ ${q}</span>`).join('')}</div>`:'<div style="color:var(--muted);font-size:13px;">No matches yet</div>'}
       ${notYet.length?`<div style="font-size:11px;color:var(--muted);letter-spacing:1px;text-transform:uppercase;margin:8px 0 4px;">Scheduled with</div><div class="tags-wrap">${notYet.map(q=>`<span class="ptag-sched">${q}</span>`).join('')}</div>`:''}
     </div>`;
@@ -2982,11 +3088,11 @@ function renderLbBody(allPlayers){
     if(!p)return;
     const pc=podCls[i];
     const medalEmoji=pc==='p1'?'🥇':pc==='p2'?'🥈':'🥉';
-    const av=p.avatar?`<img src="${p.avatar}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;"/>`:`${p.displayName[0].toUpperCase()}`;
-    html+=`<div class="pod ${pc}" onclick="openLbProfile('${p.uid}')">
+    const av=p.avatar?`<img src="${p.avatar}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;"/>`:`${esc(p.displayName[0]).toUpperCase()}`;
+    html+=`<div class="pod ${pc}" onclick="openLbProfile('${esc(p.uid)}')">
       <div style="font-size:${pc==='p1'?'24':'20'}px;margin-bottom:4px;">${medalEmoji}</div>
       <div class="pod-avatar" style="overflow:hidden;">${av}</div>
-      <div class="pod-name">${p.displayName}</div>
+      <div class="pod-name">${esc(p.displayName)}</div>
       <div class="pod-pts">${p.pts}</div>
       <div class="pod-lbl">pts</div>
       <div class="pod-block"></div>
@@ -2997,12 +3103,12 @@ function renderLbBody(allPlayers){
     const pct=Math.round(p.pts/maxPts*100);
     const isMe=currentUser&&currentUser.uid===p.uid;
     const medal=medals[i]||null;
-    const av=p.avatar?`<img src="${p.avatar}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;"/>`:`<span style="font-weight:800;letter-spacing:-0.5px;font-size:13px;color:var(--accent);">${p.displayName[0].toUpperCase()}</span>`;
-    html+=`<div onclick="openLbProfile('${p.uid}')" style="display:flex;align-items:center;gap:10px;padding:10px 12px;background:${isMe?'rgba(0,229,160,0.07)':i<3?'var(--card)':'var(--surface)'};border:1px solid ${isMe?'rgba(0,229,160,0.3)':i<3?'var(--border)':'transparent'};border-radius:12px;margin-bottom:7px;cursor:pointer;">
+    const av=p.avatar?`<img src="${p.avatar}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;"/>`:`<span style="font-weight:800;letter-spacing:-0.5px;font-size:13px;color:var(--accent);">${esc(p.displayName[0]).toUpperCase()}</span>`;
+    html+=`<div onclick="openLbProfile('${esc(p.uid)}')" style="display:flex;align-items:center;gap:10px;padding:10px 12px;background:${isMe?'rgba(0,229,160,0.07)':i<3?'var(--card)':'var(--surface)'};border:1px solid ${isMe?'rgba(0,229,160,0.3)':i<3?'var(--border)':'transparent'};border-radius:12px;margin-bottom:7px;cursor:pointer;">
       <div style="font-weight:800;letter-spacing:-0.5px;font-size:${i<3?'20':'16'}px;min-width:24px;text-align:center;color:${i===0?'var(--accent3)':i===1?'#aaa':i===2?'#cd7f32':'var(--muted)'};">${medal||i+1}</div>
       <div style="width:34px;height:34px;border-radius:50%;background:rgba(0,229,160,0.08);border:2px solid ${isMe?'var(--accent)':'var(--border)'};display:flex;align-items:center;justify-content:center;flex-shrink:0;overflow:hidden;">${av}</div>
       <div style="flex:1;min-width:0;">
-        <div style="font-size:13px;font-weight:700;display:flex;align-items:center;gap:5px;">${p.displayName}${isMe?`<span style="font-size:9px;background:var(--accent);color:var(--bg);padding:2px 5px;border-radius:4px;font-weight:700;">YOU</span>`:''}</div>
+        <div style="font-size:13px;font-weight:700;display:flex;align-items:center;gap:5px;">${esc(p.displayName)}${isMe?`<span style="font-size:9px;background:var(--accent);color:var(--bg);padding:2px 5px;border-radius:4px;font-weight:700;">YOU</span>`:''}</div>
         <div style="height:4px;background:var(--border);border-radius:2px;margin-top:5px;overflow:hidden;"><div style="height:100%;width:${pct}%;background:${i<3?'var(--accent)':'var(--muted)'};border-radius:2px;"></div></div>
       </div>
       <div style="text-align:right;flex-shrink:0;">
