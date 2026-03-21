@@ -36,18 +36,18 @@
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
 
 <script type="module">
-  import { initializeApp }                        from "https://www.gstatic.com/firebasejs/11.6.0/firebase-app.js";
-  import { getDatabase, ref, set, get, onValue }  from "https://www.gstatic.com/firebasejs/11.6.0/firebase-database.js";
+  import { initializeApp }                        from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
+  import { getDatabase, ref, set, get, onValue }  from "https://www.gstatic.com/firebasejs/10.14.1/firebase-database.js";
   import {
     getAuth, onAuthStateChanged,
     signOut,
     GoogleAuthProvider,
     signInWithPopup
-  } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-auth.js";
+  } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
   import {
     initializeAppCheck,
     ReCaptchaV3Provider
-  } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-app-check.js";
+  } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app-check.js";
 
   const firebaseConfig = {
     apiKey: "AIzaSyA9OxHS-p_458IoxUQLIPmZ6_AM1JZMH2Q",
@@ -62,12 +62,15 @@
   const app  = initializeApp(firebaseConfig);
 
   // ── App Check (reCAPTCHA v3) ──
-  // Replace RECAPTCHA_SITE_KEY_HERE with your actual site key from
-  // https://www.google.com/recaptcha/admin — use the SITE key (not the secret)
-  initializeAppCheck(app, {
-    provider: new ReCaptchaV3Provider('6LfWoZIsAAAAAKWaWG0OHfYvvUPhnMest_3P_N5g'),
-    isTokenAutoRefreshEnabled: true
-  });
+  // Wrapped in try/catch — a reCAPTCHA failure must never block sign-in
+  try {
+    initializeAppCheck(app, {
+      provider: new ReCaptchaV3Provider('6LfWoZIsAAAAAKWaWG0OHfYvvUPhnMest_3P_N5g'),
+      isTokenAutoRefreshEnabled: true
+    });
+  } catch(e) {
+    console.warn('App Check init failed (non-fatal):', e.message);
+  }
 
   const db       = getDatabase(app);
   const auth     = getAuth(app);
