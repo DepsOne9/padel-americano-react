@@ -9,12 +9,12 @@
 <!-- Content Security Policy: restrict what can execute on this page -->
 <meta http-equiv="Content-Security-Policy" content="
   default-src 'self';
-  script-src 'self' 'unsafe-inline' https://www.gstatic.com;
+  script-src 'self' 'unsafe-inline' https://www.gstatic.com https://www.recaptcha.net https://recaptcha.net;
   style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
   font-src https://fonts.gstatic.com;
-  connect-src https://*.firebaseio.com https://*.googleapis.com https://identitytoolkit.googleapis.com https://securetoken.googleapis.com wss://*.firebaseio.com;
-  img-src 'self' data: https://lh3.googleusercontent.com;
-  frame-src https://padel-americano19.firebaseapp.com;
+  connect-src https://*.firebaseio.com https://*.googleapis.com https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://firebase.googleapis.com https://firebaseinstallations.googleapis.com https://www.googleapis.com https://recaptchaenterprise.googleapis.com wss://*.firebaseio.com;
+  img-src 'self' data: https://lh3.googleusercontent.com https://www.gstatic.com;
+  frame-src https://padel-americano19.firebaseapp.com https://accounts.google.com https://www.recaptcha.net https://recaptcha.net;
   object-src 'none';
   base-uri 'self';
 ">
@@ -244,7 +244,7 @@ input[type=number]{-moz-appearance:textfield;}
 .modal-title{font-weight:800;letter-spacing:-0.5px;font-size:26px;letter-spacing:2px;margin-bottom:6px;}
 .modal-sub{font-size:13px;color:var(--muted);margin-bottom:18px;line-height:1.5;}
 </style>
-  <script type="module" crossorigin src="/padel-americano-react/assets/index-qtjO04JY.js"></script>
+  <script type="module" crossorigin src="/padel-americano-react/assets/index-DUMzeRCk.js"></script>
 </head>
 <body>
 
